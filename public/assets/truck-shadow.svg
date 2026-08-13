@@ -1,0 +1,12 @@
+<svg preserveAspectRatio="none" width="100%" height="100%" overflow="visible" style="display: block;" viewBox="0 0 1168.8 557.258" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="truck shadow" filter="url(#filter0_f_0_4)">
+<path d="M133.752 84.3306L1102.36 64.4004C1103.48 64.3774 1104.4 65.2793 1104.4 66.4V465.858C1104.4 466.963 1103.5 467.858 1102.4 467.858H1068.82C1068.24 467.858 1067.68 468.113 1067.3 468.554L1047 492.163C1046.62 492.604 1046.06 492.858 1045.48 492.858H953.484C953.103 492.858 952.729 492.75 952.408 492.544L871.892 441.172C871.571 440.967 871.197 440.858 870.816 440.858H429.9C428.795 440.858 427.9 441.754 427.9 442.858V465.858C427.9 466.963 427.005 467.858 425.9 467.858H268.124C267.656 467.858 267.203 468.022 266.844 468.322L237.956 492.395C237.597 492.694 237.144 492.858 236.676 492.858H171.728C171.198 492.858 170.689 492.648 170.314 492.273L132.986 454.944C132.611 454.569 132.102 454.358 131.572 454.358H66.4C65.2954 454.358 64.4 453.463 64.4 452.358V264.724C64.4 264.482 64.4437 264.243 64.5291 264.017L131.922 85.6234C132.211 84.8592 132.935 84.3474 133.752 84.3306Z" fill="var(--fill-0, black)" fill-opacity="0.14" style="mix-blend-mode:multiply"/>
+</g>
+<defs>
+<filter id="filter0_f_0_4" x="0" y="1.58325e-06" width="1168.8" height="557.258" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+<feFlood flood-opacity="0" result="BackgroundImageFix"/>
+<feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
+<feGaussianBlur stdDeviation="32.2" result="effect1_foregroundBlur_0_4"/>
+</filter>
+</defs>
+</svg>

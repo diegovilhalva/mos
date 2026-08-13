@@ -1,0 +1,85 @@
+---
+import '@fontsource/bebas-neue/400.css';
+import '@fontsource/inter/400.css';
+import '@fontsource/inter/500.css';
+import '../styles/global.css';
+
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const {
+  title = 'MOS — Movers San Antonio',
+  description = 'Clear-rate, no-guesswork moving and logistics in San Antonio.',
+} = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#ffffff" />
+    <link
+      rel="preload"
+      href="/assets/fonts/NeueMontreal-Regular.otf"
+      as="font"
+      type="font/otf"
+      crossorigin="anonymous"
+    />
+    <link rel="icon" type="image/svg+xml" href="/assets/logo-mark.svg" />
+    <!-- The only thing on screen while the curtain is up, so it must not pop in
+         a beat after the orange does. -->
+    <link rel="preload" href="/assets/logo-white.png" as="image" />
+    <title>{title}</title>
+
+    <!-- Must run at parse time, before any bundled module: it publishes the gate
+         that both the preloader controller and the Experience island read, so
+         neither can start before the other has had a chance to subscribe. -->
+    <script is:inline>
+      window.__mosPreloader = (() => {
+        let resolve;
+        const promise = new Promise((r) => {
+          resolve = r;
+        });
+        return { promise, resolve, done: false };
+      })();
+
+      document.documentElement.classList.add('is-preloading');
+
+      // Last resort. Covers the case the bundle itself never loads — without it
+      // a dropped chunk leaves a permanent orange wall over the site.
+      //
+      // The overlay removal is NOT guarded by `done`: the gate is released part
+      // way through the sweep, so between that point and the end of the tween
+      // `done` is true while the curtain is still on screen. Keying the removal
+      // off it would strand the curtain if this fired inside that window.
+      window.setTimeout(() => {
+        const gate = window.__mosPreloader;
+        document.documentElement.classList.remove('is-preloading');
+        document.querySelector('[data-preloader]')?.remove();
+        if (!gate || gate.done) return;
+        gate.done = true;
+        gate.resolve();
+      }, 10000);
+    </script>
+
+    <noscript>
+      <style>
+        .preloader {
+          display: none;
+        }
+        html.is-preloading,
+        html.is-preloading body {
+          overflow: auto;
+        }
+      </style>
+    </noscript>
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>

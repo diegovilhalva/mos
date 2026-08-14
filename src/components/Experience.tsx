@@ -15,18 +15,27 @@ import type { VapourTextCanvasHandle } from './VapourTextCanvas';
  *   state 0 (t = 0)    hero at rest                          snapped
  *   state 1 (t = 1)    truck far left, hero gone, "Gamble"    snapped
  *   state 2 (t = 2)    phrase vapourised, "Problems" resolved snapped
- *   state 3 (t = 3.5)  banner swept off, third section behind FREE SCROLL
+ *   state 3 (t = 4.5)  video fullscreen and played out        FREE SCROLL
  *
- * Snapping deliberately stops at state 2. Past it the banner sweep is ordinary
+ * Snapping deliberately stops at state 2. Past it everything is ordinary
  * scrolling, so the page starts feeling like a normal page.
  *
- * Transitions A and B are one unit each; C is 1.5 so the banner has enough
- * scroll length to travel a full viewport plus its own height at roughly 1:1
- * with the wheel. Every tween inside a transition MUST finish before the next
- * boundary, or a "fixed" state would still be moving when the snap settles.
+ * Transitions A and B are one unit each. C runs 2 -> 4.5 and overlaps two
+ * things: the banner sweeps 2 -> 3.5 (a viewport plus its own height, roughly
+ * 1:1 with the wheel), while the video scrubs and opens out across the whole
+ * 2 -> 4.5, so it lands fullscreen exactly on its last frame.
+ *
+ * Every tween inside a SNAPPED transition MUST finish before the next boundary,
+ * or a "fixed" state would still be moving when the snap settles.
  */
 
-const TIMELINE_UNITS = 3.5;
+const TIMELINE_UNITS = 4.5;
+
+/** Video runs the full length of transition C. */
+const VIDEO_SPAN = 2.5;
+
+/** Frames in public/assets/frames — the 6s / 24fps source, one file each. */
+const FRAME_COUNT = 144;
 
 /** Only states 0-2 snap; state 3 is reached by free scrolling. */
 const SNAP_STOPS = [0, 1 / TIMELINE_UNITS, 2 / TIMELINE_UNITS];
@@ -138,6 +147,7 @@ function Experience() {
           // onStart and onComplete can never strand Lenis stopped.
           let wantsSnap = true;
           let lenisParked = false;
+          let cleanupCanvas: (() => void) | null = null;
 
           const states = gsap.timeline({
             defaults: { overwrite: 'auto' },
@@ -279,9 +289,100 @@ function Experience() {
             );
           }
 
+          /* --- frames: scrub and open out across the whole of transition C --- */
+          const canvas = experience.current?.querySelector<HTMLCanvasElement>('[data-third-canvas]');
+          const ctx = canvas?.getContext('2d', { alpha: false });
+
+          if (canvas && ctx) {
+            const frames: Array<HTMLImageElement | undefined> = new Array(FRAME_COUNT);
+            let drawnFrame = -1;
+
+            const drawFrame = (index: number) => {
+              // Until a frame has arrived, hold on the nearest one that has.
+              let image = frames[index];
+              for (let step = 1; !image && step < FRAME_COUNT; step += 1) {
+                image = frames[index - step] ?? frames[index + step];
+              }
+              if (!image) return;
+
+              // Canvas has no object-fit, so cover-fit by hand.
+              const { width, height } = canvas;
+              const scale = Math.max(width / image.naturalWidth, height / image.naturalHeight);
+              const w = image.naturalWidth * scale;
+              const h = image.naturalHeight * scale;
+              ctx.drawImage(image, (width - w) / 2, (height - h) / 2, w, h);
+            };
+
+            const sizeCanvas = () => {
+              const dpr = Math.min(window.devicePixelRatio || 1, 2);
+              const w = Math.round(canvas.clientWidth * dpr);
+              const h = Math.round(canvas.clientHeight * dpr);
+              if (!w || !h || (canvas.width === w && canvas.height === h)) return;
+              canvas.width = w;
+              canvas.height = h;
+              if (drawnFrame >= 0) drawFrame(drawnFrame);
+            };
+
+            // Fetched in the background while the visitor is still in the hero,
+            // so the ~5MB never competes with first paint. Several chains at
+            // once, but in order, so the opening frames land first.
+            let nextToLoad = 0;
+            const loadNext = () => {
+              if (nextToLoad >= FRAME_COUNT) return;
+              const index = nextToLoad;
+              nextToLoad += 1;
+
+              const image = new Image();
+              image.src = `/assets/frames/frame-${String(index + 1).padStart(3, '0')}.webp`;
+              // decode() off the main thread, so the first draw never stalls.
+              image
+                .decode()
+                .then(() => {
+                  frames[index] = image;
+                  if (index === drawnFrame || drawnFrame < 0) drawFrame(Math.max(drawnFrame, 0));
+                })
+                .catch(() => {})
+                .finally(loadNext);
+            };
+            for (let chain = 0; chain < 6; chain += 1) loadNext();
+
+            sizeCanvas();
+            window.addEventListener('resize', sizeCanvas);
+
+            const playhead = { progress: 0 };
+            const renderPlayhead = () => {
+              sizeCanvas();
+              const frame = Math.round(playhead.progress * (FRAME_COUNT - 1));
+              if (frame === drawnFrame) return;
+              drawnFrame = frame;
+              drawFrame(frame);
+            };
+
+            states
+              .to(
+                playhead,
+                { progress: 1, duration: VIDEO_SPAN, ease: 'none', onUpdate: renderPlayhead },
+                2,
+              )
+              .fromTo(
+                canvas,
+                { clipPath: 'inset(25% 25% 25% 25% round 16px)' },
+                {
+                  clipPath: 'inset(0% 0% 0% 0% round 0px)',
+                  duration: VIDEO_SPAN,
+                  ease: 'none',
+                  immediateRender: false,
+                },
+                2,
+              );
+
+            cleanupCanvas = () => window.removeEventListener('resize', sizeCanvas);
+          }
+
           return () => {
             header?.classList.remove('site-header--compact');
             if (third) third.style.clipPath = '';
+            cleanupCanvas?.();
             lensEnabled.current = true;
           };
         });
@@ -290,6 +391,14 @@ function Experience() {
         // it cannot share one clipped 100dvh pin with the story. Stack instead.
         media.add('(max-width: 760px)', () => {
           lensEnabled.current = true;
+
+          // No scrub down here, so the video plays itself as ambient loop.
+          const video = experience.current?.querySelector<HTMLVideoElement>('[data-third-video]');
+          if (video) {
+            video.muted = true;
+            video.loop = true;
+            void video.play().catch(() => {});
+          }
 
           const revealWords = gsap.to(words, {
             y: 0,
@@ -312,6 +421,7 @@ function Experience() {
           });
 
           return () => {
+            video?.pause();
             revealWords.scrollTrigger?.kill();
             revealProblems.scrollTrigger?.kill();
           };

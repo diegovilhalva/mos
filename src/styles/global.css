@@ -151,6 +151,27 @@ button {
   clip-path: inset(100% 0 0 0);
 }
 
+/* Covers the whole pin, so the clip-path is a window onto it rather than a
+   scaler — the frame grows to fullscreen with no distortion and no re-layout.
+   Equal percentage insets keep that window at the viewport's own aspect at
+   every size, so the crop stays honest. */
+.stage-third__canvas {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--navy);
+  clip-path: inset(25% 25% 25% 25% round 16px);
+  will-change: clip-path;
+}
+
+/* Only the non-scrubbing fallbacks use the real video. */
+.stage-third__video {
+  display: none;
+}
+
 .stage-layer--third h2 {
   margin: 0;
   color: var(--navy);
@@ -937,8 +958,27 @@ button {
   .stage-layer--third {
     position: relative;
     inset: auto;
-    min-height: 60svh;
-    padding: 96px 0;
+    gap: 40px;
+    min-height: 0;
+    padding: 96px var(--page-gutter);
+    clip-path: none;
+  }
+
+  /* No scrub down here, so play the real video and skip the frame sequence
+     entirely — it joins the flow as an ordinary 16:9 block. */
+  .stage-third__canvas {
+    display: none;
+  }
+
+  .stage-third__video {
+    position: relative;
+    inset: auto;
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+    border-radius: 12px;
     clip-path: none;
   }
 
@@ -1202,8 +1242,26 @@ button {
   .experience--reduced .stage-layer--third {
     position: relative;
     inset: auto;
-    min-height: 60svh;
-    padding: 96px 0;
+    gap: 40px;
+    min-height: 0;
+    padding: 96px var(--page-gutter);
+    clip-path: none;
+  }
+
+  /* Experience.tsx bails before the canvas scrub exists, so show the video. */
+  .experience--reduced .stage-third__canvas {
+    display: none;
+  }
+
+  .experience--reduced .stage-third__video {
+    position: relative;
+    inset: auto;
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+    border-radius: 12px;
     clip-path: none;
   }
 

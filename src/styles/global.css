@@ -98,6 +98,70 @@ button {
   pointer-events: none;
 }
 
+/* --- banner sweep + third section ---------------------------------------
+   Both sit above everything else in the pin. .hero__stage carries a transform
+   so it is its own stacking context, which means the truck's z-index 20 cannot
+   escape it — 30/31 clear the whole stage regardless. */
+
+.stage-banner {
+  position: absolute;
+  z-index: 31;
+  /* Parks flush under the pin, so its resting transform is 0 and GSAP can drive
+     it up from there without an initial set. .experience__pin clips it. */
+  top: 100%;
+  left: 0;
+  right: 0;
+  height: min(620px, 68svh);
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 30px;
+  padding: 48px var(--page-gutter);
+  background: var(--orange);
+  text-align: center;
+  will-change: transform;
+}
+
+.stage-banner__eyebrow {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 17px;
+}
+
+.stage-banner__text {
+  max-width: 1200px;
+  margin: 0;
+  color: #fff;
+  font-family: 'Neue Montreal', 'Helvetica Neue', sans-serif;
+  font-size: clamp(26px, 3.6vw, 54px);
+  font-weight: 400;
+  line-height: 1.24;
+  letter-spacing: -0.02em;
+}
+
+.stage-layer--third {
+  position: absolute;
+  z-index: 30;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: #fff;
+  /* Fully hidden until the banner starts sweeping past it; the clip is then
+     driven inline from the banner's live position. */
+  clip-path: inset(100% 0 0 0);
+}
+
+.stage-layer--third h2 {
+  margin: 0;
+  color: var(--navy);
+  font-family: 'Neue Montreal', 'Helvetica Neue', sans-serif;
+  font-size: clamp(48px, 9vw, 152px);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+}
+
 .site-header {
   position: fixed;
   z-index: 50;
@@ -657,6 +721,7 @@ button {
   height: 100%;
   pointer-events: none;
   will-change: opacity;
+  top: -10px;
 }
 
 .story__problems {
@@ -859,6 +924,22 @@ button {
     inset: auto;
     height: 820px;
     pointer-events: auto;
+  }
+
+  /* No sweep down here, so the banner and third section simply stack in flow. */
+  .stage-banner {
+    position: relative;
+    top: auto;
+    height: auto;
+    padding: 72px var(--page-gutter);
+  }
+
+  .stage-layer--third {
+    position: relative;
+    inset: auto;
+    min-height: 60svh;
+    padding: 96px 0;
+    clip-path: none;
   }
 
   .story__truck {
@@ -1109,6 +1190,21 @@ button {
     inset: auto;
     min-height: 700px;
     pointer-events: auto;
+  }
+
+  .experience--reduced .stage-banner {
+    position: relative;
+    top: auto;
+    height: auto;
+    padding: 72px var(--page-gutter);
+  }
+
+  .experience--reduced .stage-layer--third {
+    position: relative;
+    inset: auto;
+    min-height: 60svh;
+    padding: 96px 0;
+    clip-path: none;
   }
 
   .experience--reduced .story__phrase-wrap {

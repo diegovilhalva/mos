@@ -6,7 +6,6 @@
   font-display: swap;
 }
 
-
 :root {
   --navy: #000a3c;
   --orange: #ff5a33;
@@ -31,7 +30,6 @@ html {
   -ms-overflow-style: none;
 }
 
-
 html::-webkit-scrollbar,
 body::-webkit-scrollbar {
   width: 0;
@@ -45,6 +43,8 @@ body {
   background: #fff;
 }
 
+/* Lenis owns scrolling; native smooth scrolling fights its RAF loop and the
+   snap tween, so it must stay off. */
 html.lenis,
 html.lenis body {
   height: auto;
@@ -58,13 +58,11 @@ html.lenis body {
   overscroll-behavior: contain;
 }
 
-
 body,
 button,
 a {
   font-family: 'Inter', sans-serif;
 }
-
 
 a {
   color: inherit;
@@ -75,20 +73,30 @@ button {
   color: inherit;
 }
 
+.experience {
+  position: relative;
+  z-index: 40;
+  min-height: max(800px, 100svh);
+  isolation: isolate;
+  background: #fff;
+}
 
+.experience__pin {
+  position: relative;
+  width: 100%;
+  min-height: 800px;
+  height: max(800px, 100svh);
+  overflow: hidden;
+  background: #fff;
+}
 
-
-
-
-
-
-
-
-
-
-
-
-
+/* The story panels keep the full-width coordinate space they had back when they
+   were their own section, so every offset below still holds unchanged. */
+.stage-layer--story {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
 
 .site-header {
   position: fixed;
@@ -113,7 +121,6 @@ button {
     backdrop-filter 520ms ease;
 }
 
-
 .brand {
   display: inline-flex;
   align-items: flex-start;
@@ -133,7 +140,6 @@ button {
   line-height: 1;
   letter-spacing: -0.03em;
 }
-
 
 .nav {
   display: flex;
@@ -158,45 +164,41 @@ button {
     visibility 520ms;
 }
 
-.nav__links>a {
+.nav__links > a {
   position: relative;
   padding: 12px 0;
 }
 
-
-.nav__links>a::after {
+.nav__links > a::after {
   position: absolute;
   right: 0;
   bottom: 5px;
   left: 0;
-  content: '';
   height: 1px;
+  content: '';
   background: currentColor;
   transform: scaleX(0);
   transform-origin: right;
   transition: transform 420ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-
-.nav__links>a:hover::after,
-.nav__links>a:focus-visible::after {
+.nav__links > a:hover::after,
+.nav__links > a:focus-visible::after {
   transform: scaleX(1);
   transform-origin: left;
 }
-
 
 .nav__contact {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 15px;
+  min-height: 45px;
   padding: 10px 18px;
   color: #fff;
   background: var(--navy);
   transition: background-color 250ms ease;
   will-change: transform;
 }
-
 
 .nav__contact:hover,
 .nav__contact:focus-visible {
@@ -220,7 +222,6 @@ button {
     visibility 520ms;
 }
 
-
 .menu-toggle span {
   display: block;
   height: 2px;
@@ -228,7 +229,11 @@ button {
   background: var(--navy);
 }
 
-
+/* Compaction is a CSS state, not a GSAP tween. Tweening `width` here meant GSAP
+   froze a measured pixel width onto .nav__links, which clipped "Projects" behind
+   its own overflow:hidden and could strand it at opacity/visibility 0.
+   Doubled class beats the min-width:1441px `.site-header { width: 1104px }`
+   rule regardless of source order. */
 .site-header.site-header--compact {
   width: min(622px, calc(100vw - 40px));
   padding: 7px 16px;
@@ -240,11 +245,9 @@ button {
   backdrop-filter: blur(18px) saturate(1.18);
 }
 
-
 .site-header--compact .nav {
   gap: 0;
 }
-
 
 .site-header--compact .nav__links {
   width: 0;
@@ -259,7 +262,9 @@ button {
   visibility: visible;
 }
 
-
+/* Nudges the whole hero — copy, metrics, showreel, CTA and truck together — as
+   one unit, so none of the absolute coordinates below have to be retuned.
+   Adjust the two custom properties to taste. */
 .hero__stage {
   --hero-shift-x: -40px;
   --hero-shift-y: 32px;
@@ -269,7 +274,6 @@ button {
   margin: 0 auto;
   transform: translate(var(--hero-shift-x), var(--hero-shift-y));
 }
-
 
 .hero__headline-mask {
   position: absolute;
@@ -292,7 +296,6 @@ button {
   text-transform: uppercase;
 }
 
-
 .hero__stage h1 {
   font-size: 152px;
 }
@@ -306,13 +309,11 @@ button {
   gap: 36px;
 }
 
-
 .metric {
   display: grid;
   gap: 5px;
   line-height: 1.15;
 }
-
 
 .metric strong {
   font-size: 25px;
@@ -324,7 +325,6 @@ button {
   font-size: 13px;
   font-weight: 500;
 }
-
 
 .showreel {
   position: absolute;
@@ -338,7 +338,6 @@ button {
   will-change: transform;
 }
 
-
 .showreel img {
   position: absolute;
   inset: 0;
@@ -348,7 +347,9 @@ button {
   will-change: transform;
 }
 
-
+/* z-index 20 sits above every hero element (showreel is the highest at 10) and
+   above the story panels, so nothing paints over the truck as it travels left.
+   It also makes the truck a stacking context, scoping its own layer order. */
 .truck {
   --lens-x: 760px;
   --lens-y: 210px;
@@ -367,7 +368,6 @@ button {
   will-change: transform;
 }
 
-
 .truck__image {
   position: absolute;
   z-index: 2;
@@ -378,7 +378,6 @@ button {
   object-fit: contain;
 }
 
-
 .truck__image--inverted,
 .truck__image--pressure {
   opacity: 0;
@@ -386,46 +385,49 @@ button {
   will-change: opacity, mask-image;
 }
 
-
-
 .truck__image--inverted {
   z-index: 4;
-  -webkit-mask-image: radial-gradient(circle var(--lens-edge) at var(--lens-x) var(--lens-y),
-      #000 0,
-      #000 var(--lens-core),
-      rgba(0, 0, 0, 0.78) calc(var(--lens-core) + 6px),
-      transparent var(--lens-edge));
-  mask-image: radial-gradient(circle var(--lens-edge) at var(--lens-x) var(--lens-y),
-      #000 0,
-      #000 var(--lens-core),
-      rgba(0, 0, 0, 0.78) calc(var(--lens-core) + 6px),
-      transparent var(--lens-edge));
+  -webkit-mask-image: radial-gradient(
+    circle var(--lens-edge) at var(--lens-x) var(--lens-y),
+    #000 0,
+    #000 var(--lens-core),
+    rgba(0, 0, 0, 0.78) calc(var(--lens-core) + 6px),
+    transparent var(--lens-edge)
+  );
+  mask-image: radial-gradient(
+    circle var(--lens-edge) at var(--lens-x) var(--lens-y),
+    #000 0,
+    #000 var(--lens-core),
+    rgba(0, 0, 0, 0.78) calc(var(--lens-core) + 6px),
+    transparent var(--lens-edge)
+  );
 }
-
 
 .truck__image--pressure {
   z-index: 3;
   filter: blur(10px) saturate(1.08);
-  -webkit-mask-image: radial-gradient(circle var(--pressure-outer) at var(--lens-x) var(--lens-y),
-      transparent 0,
-      transparent var(--pressure-inner),
-      rgba(0, 0, 0, 0.72) calc(var(--pressure-inner) + 12px),
-      rgba(0, 0, 0, 0.32) calc(var(--pressure-outer) - 16px),
-      transparent var(--pressure-outer));
-  mask-image: radial-gradient(circle var(--pressure-outer) at var(--lens-x) var(--lens-y),
-      transparent 0,
-      transparent var(--pressure-inner),
-      rgba(0, 0, 0, 0.72) calc(var(--pressure-inner) + 12px),
-      rgba(0, 0, 0, 0.32) calc(var(--pressure-outer) - 16px),
-      transparent var(--pressure-outer));
+  -webkit-mask-image: radial-gradient(
+    circle var(--pressure-outer) at var(--lens-x) var(--lens-y),
+    transparent 0,
+    transparent var(--pressure-inner),
+    rgba(0, 0, 0, 0.72) calc(var(--pressure-inner) + 12px),
+    rgba(0, 0, 0, 0.32) calc(var(--pressure-outer) - 16px),
+    transparent var(--pressure-outer)
+  );
+  mask-image: radial-gradient(
+    circle var(--pressure-outer) at var(--lens-x) var(--lens-y),
+    transparent 0,
+    transparent var(--pressure-inner),
+    rgba(0, 0, 0, 0.72) calc(var(--pressure-inner) + 12px),
+    rgba(0, 0, 0, 0.32) calc(var(--pressure-outer) - 16px),
+    transparent var(--pressure-outer)
+  );
 }
-
 
 .truck--lens-active .truck__image--inverted,
 .truck--lens-active .truck__image--pressure {
   opacity: 1;
 }
-
 
 .truck__container-hitbox {
   position: absolute;
@@ -437,7 +439,14 @@ button {
   pointer-events: auto;
 }
 
+/* Wheel sprites sit over the tyres baked into truck.png. Geometry was measured
+   off truck.png (1870x841) by fitting each tyre's outer circle, then expressed
+   as percentages — the .truck box keeps the image's aspect at every breakpoint,
+   so these hold without per-breakpoint overrides. Sized 3% over the measured
+   tyre so no anti-aliased edge of the original shows around them.
 
+   z-index 5 keeps them above the hover-lens layers (3 and 4); otherwise the
+   lens would paint a static inverted tyre on top of the spinning one. */
 .truck__wheel {
   position: absolute;
   z-index: 5;
@@ -459,14 +468,12 @@ button {
   height: 21.0654%;
 }
 
-
 .truck__wheel--rear-2 {
   left: 81.3241%;
   top: 57.5102%;
   width: 10.0576%;
   height: 22.3636%;
 }
-
 
 .truck__shadow {
   position: absolute;
@@ -479,7 +486,6 @@ button {
   transform: scale(1.12);
 }
 
-
 .hero__location-mask {
   position: absolute;
   z-index: 6;
@@ -491,12 +497,9 @@ button {
   will-change: transform;
 }
 
-
 .hero__location-mask p {
   font-size: 136px;
 }
-
-
 
 .hero__cta {
   position: absolute;
@@ -513,7 +516,6 @@ button {
   background: var(--orange);
   will-change: transform;
 }
-
 
 .hero__cta::before {
   position: absolute;
@@ -532,7 +534,6 @@ button {
   transform-origin: left;
 }
 
-
 .hero__cta-arrow {
   display: inline-block;
   transition: transform 350ms cubic-bezier(0.16, 1, 0.3, 1);
@@ -542,8 +543,6 @@ button {
 .hero__cta:focus-visible .hero__cta-arrow {
   transform: translateX(5px);
 }
-
-
 
 .site-header--compact .nav--open {
   position: fixed;
@@ -559,8 +558,6 @@ button {
   background: rgba(0, 10, 60, 0.97);
   backdrop-filter: blur(20px);
 }
-
-
 
 .site-header--compact .nav--open .nav__links {
   width: auto !important;
@@ -583,7 +580,8 @@ button {
   background: var(--orange);
 }
 
-
+/* Only ever rendered on the narrow, non-pinned fallback layout, where the single
+   truck stays behind in the hero block. The pinned experience has exactly one. */
 .story__truck {
   display: none;
   position: absolute;
@@ -604,8 +602,6 @@ button {
   height: 100%;
   object-fit: contain;
 }
-
-
 
 .story__truck-shadow {
   position: absolute;
@@ -661,44 +657,31 @@ button {
   height: 100%;
   pointer-events: none;
   will-change: opacity;
-  top: -10px;
 }
 
 .story__problems {
   position: absolute;
   z-index: 3;
-  top: 214px;
+  top: 241px;
   left: calc(41.667% + 48.67px);
   display: grid;
-  gap: clamp(80px, 11vh, 136px);
+  gap: 43px;
 }
 
 .story__problem {
-  /* One source of truth for the thumbnail, used by both the grid track and the
-     frame itself so they can never drift apart. */
-  --problem-image: clamp(96px, 6.2vw, 124px);
-
-  position: relative;
   display: grid;
-  grid-template-columns: var(--problem-image) clamp(230px, 18.5vw, 300px);
-  gap: clamp(24px, 1.8vw, 32px);
-  /* The scatter, on both axes. margin/top rather than transform, because GSAP
-     owns this element's transform for the reveal and would overwrite it. */
-  margin-left: var(--problem-shift, 0);
-  top: var(--problem-drop, 0);
+  grid-template-columns: 80px 276px;
+  gap: 31px;
+  min-height: 110px;
   will-change: transform, opacity, filter;
 }
 
 .story__problem-image {
-  width: var(--problem-image);
-  height: var(--problem-image);
+  width: 80px;
+  height: 80px;
   overflow: hidden;
   border-radius: 9px;
-  /* Drained of colour so they read as the problem, and so three small photos
-     stop competing with the truck for attention. */
-  filter: grayscale(1) contrast(1.05);
-  transform: rotate(var(--problem-tilt, 0deg));
-  box-shadow: -5px 4px 12px rgba(0, 0, 0, 0.22);
+  box-shadow: -5px 4px 4px rgba(0, 0, 0, 0.25);
 }
 
 .story__problem-image img {
@@ -733,24 +716,22 @@ button {
 
 .story__problem-copy h3 {
   color: var(--navy);
-  font-size: clamp(19px, 1.35vw, 25px);
-  line-height: 1.22;
+  font-size: 23px;
+  line-height: 1.25;
 }
 
 .story__problem-copy p {
-  /* Width comes from the grid track now, so every item rags to the same edge. */
-  width: auto;
-  margin-top: 8px;
+  width: 276px;
+  margin-top: 9px;
   color: rgba(0, 10, 60, 0.63);
-  font-size: clamp(14px, 0.95vw, 17px);
-  line-height: 1.4;
+  font-size: 17px;
+  line-height: normal;
 }
 
 :focus-visible {
   outline: 2px solid var(--orange);
   outline-offset: 4px;
 }
-
 
 @media (min-width: 1441px) {
   :root {
@@ -769,7 +750,6 @@ button {
     left: calc(50% - 632px);
   }
 }
-
 
 @media (max-width: 1050px) {
   .experience {
@@ -844,5 +824,300 @@ button {
 
   .story__problems {
     left: 46vw;
+  }
+}
+
+@media (max-width: 760px) {
+  :root {
+    --page-gutter: 22px;
+  }
+
+  /* No pin and no snap down here: a 940px hero stage cannot share one clipped
+     100dvh pin with the story, so the two blocks simply stack and scroll. */
+  .experience {
+    min-height: 0;
+  }
+
+  .experience__pin {
+    min-height: 0;
+    height: auto;
+    /* stays hidden: the truck sits at left:-74px and would otherwise push out a
+       horizontal scrollbar. Height is auto, so nothing is clipped vertically. */
+    overflow: hidden;
+  }
+
+  /* No room to give on phones: metrics and the CTA already sit on a 22px gutter,
+     so a left shift would push them off-screen. */
+  .hero__stage {
+    --hero-shift-x: 0px;
+    --hero-shift-y: 0px;
+    height: 940px;
+  }
+
+  .stage-layer--story {
+    position: relative;
+    inset: auto;
+    height: 820px;
+    pointer-events: auto;
+  }
+
+  .story__truck {
+    display: block;
+  }
+
+  .site-header {
+    position: fixed;
+    top: 22px;
+  }
+
+  .brand {
+    gap: 9px;
+  }
+
+  .brand img {
+    width: 38px;
+    height: 37px;
+  }
+
+  .brand span {
+    font-size: 34px;
+  }
+
+  .menu-toggle {
+    position: relative;
+    z-index: 31;
+    width: 44px !important;
+    height: 44px;
+    padding: 12px 9px;
+    background: var(--navy);
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+
+  .menu-toggle span {
+    margin: 4px 0;
+    background: #fff;
+  }
+
+  .nav {
+    position: fixed;
+    z-index: 30;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 20px;
+    padding: 80px 11vw;
+    color: #fff;
+    font-size: clamp(34px, 10vw, 56px);
+    background: var(--navy);
+    visibility: hidden;
+    opacity: 0;
+    transform: translateY(-16px);
+    transition:
+      opacity 350ms ease,
+      transform 500ms cubic-bezier(0.16, 1, 0.3, 1),
+      visibility 350ms;
+  }
+
+  .nav__links {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 20px;
+    overflow: visible;
+    white-space: normal;
+  }
+
+  .nav--open {
+    visibility: visible;
+    opacity: 1;
+    transform: none;
+  }
+
+  .nav__contact {
+    margin-top: 12px;
+    color: var(--navy);
+    font-size: 18px;
+    background: var(--orange);
+  }
+
+  .hero__headline-mask {
+    top: 124px;
+  }
+
+  .hero__stage h1 {
+    font-size: clamp(68px, 20vw, 100px);
+  }
+
+  .showreel {
+    top: 176px;
+    right: 15px;
+    width: 94px;
+    height: 84px;
+  }
+
+  .truck {
+    top: 258px;
+    left: -74px;
+    width: 930px;
+  }
+
+  .truck__shadow {
+    top: 19%;
+    width: 78%;
+    height: 72%;
+  }
+
+  .metrics {
+    top: 686px;
+    right: var(--page-gutter);
+    grid-template-columns: repeat(3, 1fr);
+    gap: 13px;
+  }
+
+  .metric {
+    gap: 6px;
+  }
+
+  .metric strong {
+    font-size: 22px;
+  }
+
+  .metric span {
+    max-width: 100px;
+    font-size: 11px;
+    line-height: 1.25;
+  }
+
+  .hero__location-mask {
+    top: 585px;
+    left: var(--page-gutter);
+  }
+
+  .hero__location-mask p {
+    font-size: clamp(42px, 12vw, 64px);
+  }
+
+  .hero__cta {
+    top: 808px;
+    left: var(--page-gutter);
+    min-height: 48px;
+  }
+
+  .story__truck {
+    top: 205px;
+    left: -74px;
+    width: 930px;
+  }
+
+  .story__phrase-wrap {
+    top: 500px;
+    left: var(--page-gutter);
+    width: calc(100vw - (var(--page-gutter) * 2));
+    height: 132px;
+  }
+
+  .story__phrase {
+    font-size: clamp(38px, 10.5vw, 52px);
+    line-height: 1.08;
+  }
+
+  .story__problems {
+    top: 170px;
+    left: var(--page-gutter);
+    right: var(--page-gutter);
+    gap: 30px;
+  }
+
+  .story__problem {
+    grid-template-columns: 64px 1fr;
+    gap: 18px;
+    min-height: 96px;
+  }
+
+  .story__problem-image {
+    width: 64px;
+    height: 64px;
+    border-radius: 7px;
+  }
+
+  .story__problem-copy h3 {
+    font-size: 20px;
+  }
+
+  .story__problem-copy p {
+    width: auto;
+    max-width: 280px;
+    margin-top: 6px;
+    font-size: 15px;
+  }
+}
+
+@media (hover: none), (pointer: coarse) {
+  .truck__container-hitbox,
+  .truck__image--inverted,
+  .truck__image--pressure {
+    display: none;
+  }
+}
+
+@media (max-width: 420px) {
+  .truck {
+    left: -84px;
+    width: 875px;
+  }
+
+  .metrics {
+    top: 658px;
+  }
+
+  .hero__location-mask {
+    top: 565px;
+  }
+
+  .hero__cta {
+    top: 792px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  /* Experience.tsx bails before Lenis, the pin and the state timeline exist, so
+     the two blocks just stack and everything stays at its resting style. */
+  .experience--reduced .experience__pin {
+    height: auto;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .experience--reduced .stage-layer--story {
+    position: relative;
+    inset: auto;
+    min-height: 700px;
+    pointer-events: auto;
+  }
+
+  .experience--reduced .story__phrase-wrap {
+    display: none;
+  }
+
+  .experience--reduced .story__problem {
+    opacity: 1 !important;
+    filter: none !important;
+    transform: none !important;
   }
 }

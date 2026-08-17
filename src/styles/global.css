@@ -2034,3 +2034,88 @@ button {
     display: none;
   }
 }
+
+/* ==========================================================================
+   FOOTER
+   Self-contained block, same rule as SERVICES/TESTIMONIALS above: namespaced
+   under .footer / .footer__*, liftable wholesale.
+
+   footer-containers.png is a shaped cutout with real alpha transparency, not
+   a rectangular photo — the container stack across the bottom, transparent
+   above. That's the whole trick: plain z-index stacking (sky, then headline,
+   then containers on top) does the occlusion for free, no clip-path/mask
+   needed the way ThirdReveal needs one for its rectangular photo reveal.
+   ========================================================================== */
+
+.footer {
+  position: relative;
+  background: #fff;
+  padding: clamp(24px, 4vh, 56px) var(--page-gutter);
+}
+
+/* Capped and centered exactly like .hero__stage, so the composition doesn't
+   stretch full-bleed on ultra-wide monitors. aspect-ratio (rather than a
+   fixed height) keeps sky/containers/headline in lockstep at every width. */
+.footer__stage {
+  position: relative;
+  max-width: 1440px;
+  margin: 0 auto;
+  aspect-ratio: 1619 / 971;
+  overflow: hidden;
+  border-radius: 20px;
+  /* Lets the headline size itself in cqw — a share of THIS box rather than of
+     the viewport, so it keeps spanning the same proportion of the frame once
+     the stage stops growing at its 1440px cap. */
+  container-type: inline-size;
+}
+
+.footer__sky {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Centred with left/right + text-align rather than a translateX(-50%), so the
+   transform is left entirely to GSAP — otherwise its yPercent tween would
+   have to carry the centring offset too, and would drop it on resize. */
+.footer__headline {
+  position: absolute;
+  z-index: 2;
+  left: 0;
+  right: 0;
+  top: 7%;
+  text-align: center;
+  margin: 0;
+  color: #fff;
+  /* Same face as the MOS wordmark in the header (.brand span). Bebas is
+     condensed, so it needs a much larger size than a normal-width face to
+     span the frame — 37cqw lands it at ~85% of the stage width. */
+  font-family: 'Bebas Neue', sans-serif;
+  font-weight: 400;
+  font-size: 37cqw;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+  text-shadow: 0 8px 40px rgba(0, 10, 60, 0.25);
+  white-space: nowrap;
+}
+
+/* Keeps its native 3:2 ratio so the roofline silhouette stays intact — the
+   whole point of the cutout — and is slid down past the stage's bottom edge
+   instead. That lowers the roofline in frame (freeing the upper half for the
+   headline) while cropping only uniform container body off the bottom, where
+   there is nothing to lose. */
+.footer__containers {
+  position: absolute;
+  z-index: 3;
+  left: 0;
+  bottom: -26%;
+  display: block;
+  width: 100%;
+  height: auto;
+  pointer-events: none;
+}

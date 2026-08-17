@@ -172,6 +172,52 @@ button {
   display: none;
 }
 
+/* Sized in JS to the drawn frame rect rather than the viewport, so the % anchors
+   inside stay pinned to the truck through any cover-fit crop. */
+.hotspots {
+  position: absolute;
+  z-index: 3;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+}
+
+.hotspots__dot {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow:
+    0 2px 10px rgba(0, 10, 60, 0.24),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.6);
+  opacity: 0;
+}
+
+/* Positioned at the dot end and rotated toward the label; the opaque label
+   covers the far end, so it reads as meeting the label's edge. */
+.hotspots__line {
+  position: absolute;
+  height: 1.5px;
+  border-radius: 1px;
+  background: var(--orange);
+  opacity: 0;
+}
+
+.hotspots__label {
+  position: absolute;
+  padding: 9px 13px;
+  border-radius: 9px;
+  color: var(--navy);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.28;
+  white-space: nowrap;
+  background: #fff;
+  box-shadow: 0 6px 22px rgba(0, 10, 60, 0.18);
+  opacity: 0;
+}
+
 .stage-layer--third h2 {
   margin: 0;
   color: var(--navy);
@@ -966,7 +1012,8 @@ button {
 
   /* No scrub down here, so play the real video and skip the frame sequence
      entirely — it joins the flow as an ordinary 16:9 block. */
-  .stage-third__canvas {
+  .stage-third__canvas,
+  .hotspots {
     display: none;
   }
 
@@ -1249,7 +1296,8 @@ button {
   }
 
   /* Experience.tsx bails before the canvas scrub exists, so show the video. */
-  .experience--reduced .stage-third__canvas {
+  .experience--reduced .stage-third__canvas,
+  .experience--reduced .hotspots {
     display: none;
   }
 

@@ -6,7 +6,7 @@ import Lenis from 'lenis';
 import SiteHeader from './SiteHeader';
 import HeroStage from './HeroStage';
 import StoryPanels from './StoryPanels';
-import ThirdReveal from './ThirdReveal';
+import ThirdReveal, { HOTSPOTS, FRAME_W, FRAME_H } from './ThirdReveal';
 import type { VapourTextCanvasHandle } from './VapourTextCanvas';
 
 /**
@@ -16,6 +16,7 @@ import type { VapourTextCanvasHandle } from './VapourTextCanvas';
  *   state 1 (t = 1)    truck far left, hero gone, "Gamble"    snapped
  *   state 2 (t = 2)    phrase vapourised, "Problems" resolved snapped
  *   state 3 (t = 4.5)  video fullscreen and played out        FREE SCROLL
+ *   state 4 (t = 5.5)  hotspot callouts drawn over last frame FREE SCROLL
  *
  * Snapping deliberately stops at state 2. Past it everything is ordinary
  * scrolling, so the page starts feeling like a normal page.
@@ -29,13 +30,13 @@ import type { VapourTextCanvasHandle } from './VapourTextCanvas';
  * or a "fixed" state would still be moving when the snap settles.
  */
 
-const TIMELINE_UNITS = 4.5;
+const TIMELINE_UNITS = 5.5;
 
 /** Video runs the full length of transition C. */
 const VIDEO_SPAN = 2.5;
 
 /** Frames in public/assets/frames — the 6s / 24fps source, one file each. */
-const FRAME_COUNT = 144;
+const FRAME_COUNT = 145;
 
 /** Only states 0-2 snap; state 3 is reached by free scrolling. */
 const SNAP_STOPS = [0, 1 / TIMELINE_UNITS, 2 / TIMELINE_UNITS];
@@ -43,7 +44,7 @@ const SNAP_STOPS = [0, 1 / TIMELINE_UNITS, 2 / TIMELINE_UNITS];
 /** Above this progress the snap disengages entirely. */
 const FREE_SCROLL_FROM = SNAP_STOPS[2];
 
-function Experience() {
+export default function Experience() {
   const experience = useRef<HTMLElement>(null);
   const pin = useRef<HTMLDivElement>(null);
   const truck = useRef<HTMLDivElement>(null);
@@ -377,6 +378,83 @@ function Experience() {
               );
 
             cleanupCanvas = () => window.removeEventListener('resize', sizeCanvas);
+
+            /* --- hotspots: fire once the last frame lands (t 4.5 -> 5.5) --- */
+            const layer = experience.current?.querySelector<HTMLElement>('[data-hotspots]');
+            const dots = gsap.utils.toArray<HTMLElement>('[data-hotspot-dot]');
+            const labels = gsap.utils.toArray<HTMLElement>('[data-hotspot-label]');
+            const lines = gsap.utils.toArray<HTMLElement>('[data-hotspot-line]');
+
+            if (layer && dots.length === HOTSPOTS.length) {
+              gsap.set([...dots, ...labels], { xPercent: -50, yPercent: -50 });
+
+              // Reproduce the canvas cover fit in layout terms, so the layer sits
+              // exactly over the drawn frame and the % anchors hit real pixels.
+              const layoutHotspots = () => {
+                const cw = canvas.clientWidth;
+                const ch = canvas.clientHeight;
+                if (!cw || !ch) return;
+
+                const scale = Math.max(cw / FRAME_W, ch / FRAME_H);
+                const w = FRAME_W * scale;
+                const h = FRAME_H * scale;
+                layer.style.left = `${(cw - w) / 2}px`;
+                layer.style.top = `${(ch - h) / 2}px`;
+                layer.style.width = `${w}px`;
+                layer.style.height = `${h}px`;
+
+                // Each connector runs dot-centre -> label-centre. Only width and
+                // rotation are set here; scaleX stays owned by the reveal tween.
+                HOTSPOTS.forEach((hotspot, index) => {
+                  const dx = ((hotspot.label.x - hotspot.dot.x) / 100) * w;
+                  const dy = ((hotspot.label.y - hotspot.dot.y) / 100) * h;
+                  const line = lines[index];
+                  line.style.left = `${(hotspot.dot.x / 100) * w}px`;
+                  line.style.top = `${(hotspot.dot.y / 100) * h}px`;
+                  gsap.set(line, {
+                    width: Math.hypot(dx, dy),
+                    rotation: (Math.atan2(dy, dx) * 180) / Math.PI,
+                    transformOrigin: '0 50%',
+                  });
+                });
+              };
+
+              layoutHotspots();
+              window.addEventListener('resize', layoutHotspots);
+              cleanupCanvas = () => {
+                window.removeEventListener('resize', sizeCanvas);
+                window.removeEventListener('resize', layoutHotspots);
+              };
+
+              const reveal = gsap.timeline();
+              HOTSPOTS.forEach((_, index) => {
+                const at = index * 0.16;
+                reveal
+                  .fromTo(
+                    dots[index],
+                    { scale: 0.2, opacity: 0 },
+                    { scale: 1, opacity: 1, duration: 0.26, ease: 'back.out(2)' },
+                    at,
+                  )
+                  .fromTo(
+                    lines[index],
+                    { scaleX: 0, opacity: 1 },
+                    { scaleX: 1, duration: 0.3, ease: 'power2.out' },
+                    at + 0.12,
+                  )
+                  .fromTo(
+                    labels[index],
+                    { opacity: 0, y: 8 },
+                    { opacity: 1, y: 0, duration: 0.28, ease: 'power2.out' },
+                    at + 0.3,
+                  );
+              });
+
+              // Natural length is 3 * 0.16 + 0.3 + 0.28 = 1.06; normalising to 1
+              // fits the reveal to the 4.5 -> 5.5 window exactly, so it is fully
+              // settled at the end of the timeline whatever the stagger becomes.
+              states.add(reveal.totalDuration(1), 4.5);
+            }
           }
 
           return () => {
@@ -628,5 +706,3 @@ function Experience() {
     </>
   );
 }
-
-export default Experience

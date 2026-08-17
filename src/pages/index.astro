@@ -2,6 +2,7 @@
 import Layout from "../layouts/Layout.astro";
 import Experience from "../components/Experience";
 import ServicesSection from "../components/ServicesSection";
+import TestimonialsSection from "../components/TestimionialsSection"
 ---
 
 <Layout>
@@ -9,5 +10,6 @@ import ServicesSection from "../components/ServicesSection";
     <Experience client:load />
     <!-- Below the fold by several viewports, so it hydrates on approach. -->
     <ServicesSection client:visible />
+     <TestimonialsSection client:visible  />
   </main>
 </Layout>

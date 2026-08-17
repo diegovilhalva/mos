@@ -900,26 +900,38 @@ button {
 .story__problems {
   position: absolute;
   z-index: 3;
-  top: 241px;
+  top: 214px;
   left: calc(41.667% + 48.67px);
   display: grid;
-  gap: 43px;
+  gap: clamp(80px, 11vh, 136px);
 }
 
 .story__problem {
+  /* One source of truth for the thumbnail, used by both the grid track and the
+     frame itself so they can never drift apart. */
+  --problem-image: clamp(96px, 6.2vw, 124px);
+
+  position: relative;
   display: grid;
-  grid-template-columns: 80px 276px;
-  gap: 31px;
-  min-height: 110px;
+  grid-template-columns: var(--problem-image) clamp(230px, 18.5vw, 300px);
+  gap: clamp(24px, 1.8vw, 32px);
+  /* The scatter, on both axes. margin/top rather than transform, because GSAP
+     owns this element's transform for the reveal and would overwrite it. */
+  margin-left: var(--problem-shift, 0);
+  top: var(--problem-drop, 0);
   will-change: transform, opacity, filter;
 }
 
 .story__problem-image {
-  width: 80px;
-  height: 80px;
+  width: var(--problem-image);
+  height: var(--problem-image);
   overflow: hidden;
   border-radius: 9px;
-  box-shadow: -5px 4px 4px rgba(0, 0, 0, 0.25);
+  /* Drained of colour so they read as the problem, and so three small photos
+     stop competing with the truck for attention. */
+  filter: grayscale(1) contrast(1.05);
+  transform: rotate(var(--problem-tilt, 0deg));
+  box-shadow: -5px 4px 12px rgba(0, 0, 0, 0.22);
 }
 
 .story__problem-image img {
@@ -954,16 +966,17 @@ button {
 
 .story__problem-copy h3 {
   color: var(--navy);
-  font-size: 23px;
-  line-height: 1.25;
+  font-size: clamp(19px, 1.35vw, 25px);
+  line-height: 1.22;
 }
 
 .story__problem-copy p {
-  width: 276px;
-  margin-top: 9px;
+  /* Width comes from the grid track now, so every item rags to the same edge. */
+  width: auto;
+  margin-top: 8px;
   color: rgba(0, 10, 60, 0.63);
-  font-size: 17px;
-  line-height: normal;
+  font-size: clamp(14px, 0.95vw, 17px);
+  line-height: 1.4;
 }
 
 :focus-visible {
@@ -1345,16 +1358,21 @@ button {
     gap: 30px;
   }
 
+  /* Stacked in flow down here — a scatter would just read as broken alignment,
+     so the offsets and tilt come off. Grayscale stays; it is the point. */
   .story__problem {
-    grid-template-columns: 64px 1fr;
+    --problem-image: 64px;
+
+    grid-template-columns: var(--problem-image) 1fr;
     gap: 18px;
     min-height: 96px;
+    margin-left: 0;
+    top: 0;
   }
 
   .story__problem-image {
-    width: 64px;
-    height: 64px;
     border-radius: 7px;
+    transform: none;
   }
 
   .story__problem-copy h3 {
@@ -1781,6 +1799,238 @@ button {
 
   /* A frame that snapped in and out at full size would be worse than none. */
   .service-row__media {
+    display: none;
+  }
+}
+
+/* ==========================================================================
+   TESTIMONIALS
+   Self-contained block, same rule as SERVICES above: namespaced under
+   .testimonials / .testimonial-*, liftable wholesale.
+   ========================================================================== */
+
+.testimonials {
+  --ease-smooth: cubic-bezier(0.21, 0, 0.19, 1);
+
+  position: relative;
+  z-index: 42;
+  padding: clamp(90px, 11vh, 160px) 0;
+  background: #fff;
+  overflow: hidden;
+}
+
+.testimonials__intro {
+  padding: 0 var(--page-gutter);
+  padding-bottom: clamp(48px, 6vh, 88px);
+  display: grid;
+  justify-items: center;
+  justify-self: center;
+  gap: 14px;
+  max-width: 720px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.testimonials__eyebrow-mask,
+.testimonials__line-mask {
+  display: block;
+  margin: 0;
+  overflow: hidden;
+}
+
+.testimonials__eyebrow-mask > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--black);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.testimonials__mark {
+  width: 12px;
+  height: 12px;
+  flex: none;
+}
+
+.testimonials__title {
+  margin: 0;
+  color: var(--navy);
+  font-family: 'Neue Montreal', 'Helvetica Neue', sans-serif;
+  font-size: clamp(30px, 4vw, 58px);
+  font-weight: 400;
+  line-height: 1.08;
+  letter-spacing: -0.025em;
+}
+
+.testimonials__line-mask > span {
+  display: block;
+}
+
+.testimonials__sub {
+  margin: 0;
+  color: var(--muted);
+  font-size: clamp(14px, 1.1vw, 18px);
+}
+
+.testimonials__rows {
+  display: grid;
+  gap: clamp(16px, 2vh, 28px);
+}
+
+/* Full-bleed: the rows themselves ignore --page-gutter so cards can run to
+   the viewport edge, then fade out under the mask below rather than clip.
+   The vertical padding is dead space on purpose — overflow:hidden (needed to
+   contain the horizontal mask) would otherwise slice each card's box-shadow
+   flush against the row's top/bottom edge. */
+.testimonial-row {
+  overflow: hidden;
+  padding: 22px 0;
+  margin: -22px 0;
+  mask-image: linear-gradient(to right, transparent, #000 6%, #000 94%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 6%, #000 94%, transparent);
+}
+
+.testimonial-track {
+  display: flex;
+  width: max-content;
+  gap: clamp(16px, 1.6vw, 26px);
+  animation: testimonials-marquee var(--marquee-duration, 40s) linear infinite;
+}
+
+.testimonial-row:hover .testimonial-track {
+  animation-play-state: paused;
+}
+
+/* Two identical sets back to back; animating a full -50% traverses exactly
+   one set, so the wrap from `to` back to `from` is invisible. */
+.testimonial-set {
+  display: flex;
+  flex: none;
+  gap: clamp(16px, 1.6vw, 26px);
+}
+
+@keyframes testimonials-marquee {
+  from {
+    transform: translateX(-50%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.testimonial-card {
+  flex: none;
+  width: clamp(280px, 26vw, 340px);
+  padding: 22px 24px;
+  border: 1px solid rgba(0, 10, 60, 0.08);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 10px 30px rgba(0, 10, 60, 0.06);
+  display: grid;
+  gap: 14px;
+}
+
+.testimonial-card__head {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+}
+
+.testimonial-card__avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-family: 'Neue Montreal', 'Helvetica Neue', sans-serif;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+}
+
+.testimonial-card__who {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.testimonial-card__name {
+  color: var(--navy);
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.testimonial-card__time {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.testimonial-card__google {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  align-self: start;
+}
+
+.testimonial-card__stars {
+  display: flex;
+  gap: 3px;
+}
+
+.testimonial-star {
+  width: 15px;
+  height: 15px;
+  fill: rgba(0, 10, 60, 0.16);
+}
+
+.testimonial-star--filled {
+  fill: #fbbc04;
+}
+
+.testimonial-card__text {
+  margin: 0;
+  color: rgba(0, 10, 60, 0.72);
+  font-size: 14px;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+@media (max-width: 1050px) {
+  .testimonial-card {
+    width: clamp(240px, 62vw, 300px);
+    padding: 18px 20px;
+  }
+}
+
+@media (max-width: 760px) {
+  .testimonials {
+    padding: clamp(72px, 10vh, 120px) 0;
+  }
+
+  .testimonials__intro {
+    padding: 0 var(--page-gutter);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .testimonial-track {
+    animation: none;
+  }
+
+  /* The duplicate set exists only to fill the marquee's travel distance; with
+     no animation it would just show as unreachable dead space past the first
+     set, so it's dropped rather than left sitting there inert. */
+  .testimonial-set[aria-hidden='true'] {
     display: none;
   }
 }

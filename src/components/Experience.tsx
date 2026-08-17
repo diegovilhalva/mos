@@ -138,7 +138,15 @@ export default function Experience() {
       const vaporState = { progress: 0 };
       const getFinalTruckX = () => {
         if (!truck.current || !pin.current) return -1100;
-        const initialLeft = Number.parseFloat(getComputedStyle(truck.current).left) || 0;
+        // Measured against the pin, not `.truck`'s own `left`: that CSS value is
+        // relative to `.hero__stage`, which is centered and capped at 1440px, so
+        // past that width it drifts from the pin's left edge by (viewport - 1440)
+        // / 2. Reading real, current rects (minus any x already applied by this
+        // same tween) keeps the truck's target in the pin's coordinate space at
+        // every width instead of only below 1440px.
+        const currentX = (gsap.getProperty(truck.current, 'x') as number) || 0;
+        const initialLeft =
+          truck.current.getBoundingClientRect().left - pin.current.getBoundingClientRect().left - currentX;
         const finalRightEdge = pin.current.clientWidth >= 761 ? pin.current.clientWidth * 0.363 : 0;
         return finalRightEdge - truck.current.offsetWidth - initialLeft;
       };

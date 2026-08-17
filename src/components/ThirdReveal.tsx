@@ -1,4 +1,4 @@
-import { Fragment } from 'react';
+import { Fragment, type CSSProperties } from 'react';
 
 /**
  * Anchors are percentages of the VIDEO FRAME, not of the viewport.
@@ -29,6 +29,57 @@ export const FRAME_H = 810;
  * reads as a zoom from the middle of the screen.
  */
 export const DOOR = { x: 42.71, y: 37.78, w: 15.28, h: 27.9 };
+
+/**
+ * The four cards that rise over the photo, in the order they land.
+ *
+ * Fan offsets are percentages of the CARD's own size rather than the viewport,
+ * so the stack keeps its shape whatever the cards measure. They are centred on
+ * zero, so the fan grows symmetrically instead of walking down the screen.
+ *
+ * Only the box art needed work: it shipped with a baked orange background that
+ * would have sat as a visible block on the card, so box-cutout.png is that file
+ * with the background keyed out. The other three were already transparent and
+ * keep their own colours.
+ *
+ * Tone alternates solid/glass. A glass card samples whatever is behind it —
+ * the solid card underneath where they overlap, the photo where it overhangs —
+ * so the two tones read as one stack rather than two designs.
+ */
+export const CARDS = [
+  {
+    index: '01.',
+    title: ['Shipping', 'Details'],
+    body: 'Input your cargo details to initialize your shipment profile.',
+    art: '/assets/cargo-cards/box-cutout.png',
+    tone: 'solid',
+    slot: { x: 7.5, y: -13.5, rotate: 3.5 },
+  },
+  {
+    index: '02.',
+    title: ['Get an', 'Estimate'],
+    body: 'Receive transparent pricing tailored to your cargo needs.',
+    art: '/assets/cargo-cards/imgi_56_WZB7EDZLkENmr9LGWQgXhdflwI.png',
+    tone: 'glass',
+    slot: { x: 2.5, y: -4.5, rotate: 2 },
+  },
+  {
+    index: '03.',
+    title: ['Cargo', 'Handling'],
+    body: 'Our crew loads and secures every item for the road ahead.',
+    art: '/assets/cargo-cards/imgi_59_0M8gZZrEpTjVd0RE0hSKcnikNM.png',
+    tone: 'solid',
+    slot: { x: -2.5, y: 4.5, rotate: 0.5 },
+  },
+  {
+    index: '04.',
+    title: ['Logistic', 'Scheduling'],
+    body: 'Finalize your transit timeline and tracking milestones.',
+    art: '/assets/cargo-cards/imgi_62_B1wmuMLWlEZmleVFgGMlA0k4VU.png',
+    tone: 'glass',
+    slot: { x: -7.5, y: 13.5, rotate: -1 },
+  },
+];
 
 /**
  * The banner and the third section are one mechanism, so they live together.
@@ -110,6 +161,50 @@ export default function ThirdReveal() {
           fetchPriority="low"
           decoding="async"
         />
+
+        {/*
+          Two transform channels on purpose: the slot owns where a card comes
+          to rest, the card owns the entry motion. Neither tween has to know
+          about the other, and the resting fan survives a scrub in either
+          direction.
+        */}
+        <div className="cargo" data-cargo aria-label="How a move works">
+          {CARDS.map((card) => (
+            <div
+              className="cargo__slot"
+              key={card.index}
+              style={
+                {
+                  '--slot-x': `${card.slot.x}%`,
+                  '--slot-y': `${card.slot.y}%`,
+                  '--slot-rotate': `${card.slot.rotate}deg`,
+                } as CSSProperties
+              }
+            >
+              <article
+                className={
+                  card.tone === 'glass' ? 'cargo__card cargo__card--glass' : 'cargo__card'
+                }
+                data-cargo-card
+              >
+                <p className="cargo__index">{card.index}</p>
+                <h3 className="cargo__title">
+                  {card.title[0]}
+                  <br />
+                  {card.title[1]}
+                </h3>
+                <img
+                  className="cargo__art"
+                  src={card.art}
+                  alt=""
+                  loading="lazy"
+                  decoding="async"
+                />
+                <p className="cargo__body">{card.body}</p>
+              </article>
+            </div>
+          ))}
+        </div>
 
         {/*
           Narrow viewports and reduced motion have no scrub, and ordinary

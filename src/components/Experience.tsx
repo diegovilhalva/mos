@@ -6,7 +6,7 @@ import Lenis from 'lenis';
 import SiteHeader from './SiteHeader';
 import HeroStage from './HeroStage';
 import StoryPanels from './StoryPanels';
-import ThirdReveal, { HOTSPOTS, FRAME_W, FRAME_H, DOOR } from './ThirdReveal';
+import ThirdReveal, { HOTSPOTS, FRAME_W, FRAME_H, DOOR, CARDS } from './ThirdReveal';
 import type { VapourTextCanvasHandle } from './VapourTextCanvas';
 
 /**
@@ -20,6 +20,7 @@ import type { VapourTextCanvasHandle } from './VapourTextCanvas';
  *   state 5 (t = 6)    blacked out to the cargo door, photo   FREE SCROLL
  *                      up inside it
  *   state 6 (t = 8)    door opened out to a fullscreen image  FREE SCROLL
+ *   state 7 (t = 9)    four cards fanned over the photo       FREE SCROLL
  *
  * Snapping deliberately stops at state 2. Past it everything is ordinary
  * scrolling, so the page starts feeling like a normal page.
@@ -33,11 +34,27 @@ import type { VapourTextCanvasHandle } from './VapourTextCanvas';
  * around it while the photo comes up inside it — one beat, not two — and then
  * the opening grows out to fullscreen while the photo underneath holds still.
  *
+ * E (7.26 -> 9) fans four cards up over that photo. It starts while D is still
+ * running — deliberately, so no beat ever waits for the one before it.
+ *
  * Every tween inside a SNAPPED transition MUST finish before the next boundary,
  * or a "fixed" state would still be moving when the snap settles.
  */
 
-const TIMELINE_UNITS = 8;
+const TIMELINE_UNITS = 9;
+
+/**
+ * Where the cards start, i.e. where the door mask is 80% open.
+ *
+ * The mask runs t 6 -> 8 on power2.inOut, which is cubic, so on the out phase
+ * 1 - (2 - 2p)^3 / 2 = 0.8 gives p = 0.6316 -> t = 6 + 2(0.6316). Recompute
+ * this if that ease or that window ever changes.
+ */
+const CARDS_FROM = 7.26;
+
+/** Each card starts while the one before it is 70% through its travel. */
+const CARD_DURATION = 0.5;
+const CARD_STAGGER = 0.35;
 
 /** Video runs the full length of transition C. */
 const VIDEO_SPAN = 2.5;
@@ -105,6 +122,7 @@ export default function Experience() {
       const textEase = CustomEase.create('storyTextEase', '0.211, 0, 0.01, 1');
       const detailEase = CustomEase.create('storyDetailEase', '0.184, 0.013, 0.01, 1');
       const exitEase = CustomEase.create('storyExitEase', '0.5, 0, 0.75, 0');
+      const cardEase = CustomEase.create('cargoCardEase', '0.21, 0, 0.19, 1');
       lensEase.current = CustomEase.create('lensEase', '0.232, 0, 0.01, 1');
 
       const words = gsap.utils.toArray<HTMLElement>('[data-blur-word]');
@@ -536,6 +554,42 @@ export default function Experience() {
 
               if (layer) states.to(layer, { opacity: 0, duration: 0.3, ease: 'power2.out' }, 5.5);
             }
+          }
+
+          /* --- transition E (t 7.26 -> 9): the cards rise and fan --- */
+          const cards = gsap.utils.toArray<HTMLElement>('[data-cargo-card]');
+
+          if (cards.length === CARDS.length) {
+            cards.forEach((card, index) => {
+              states.fromTo(
+                card,
+                {
+                  // Far enough below that the card's own top edge clears the
+                  // pin at any viewport. .experience__pin clips it, so there is
+                  // nothing to fade — the card is simply not on screen until it
+                  // rises into view.
+                  y: () =>
+                    (pin.current?.clientHeight ?? window.innerHeight) * 0.56 + card.offsetHeight,
+                  xPercent: 5,
+                  rotation: -7,
+                },
+                {
+                  y: 0,
+                  xPercent: 0,
+                  rotation: 0,
+                  duration: CARD_DURATION,
+                  ease: cardEase,
+                  // immediateRender must stay ON (the fromTo default) here, the
+                  // opposite of the canvas clip tween below. That one's start
+                  // state is already its CSS default, so it can be deferred;
+                  // a card's is "off-screen by a measured pixel distance",
+                  // which CSS cannot express. Defer it and the cards simply sit
+                  // at their resting spot until the playhead arrives — visible,
+                  // and never animating.
+                },
+                CARDS_FROM + index * CARD_STAGGER,
+              );
+            });
           }
 
           return () => {

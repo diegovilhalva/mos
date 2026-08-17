@@ -244,6 +244,86 @@ button {
   will-change: clip-path, opacity;
 }
 
+/* --- the cargo card stack ------------------------------------------------ */
+.cargo {
+  position: absolute;
+  z-index: 6;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* Left edge and vertical centre come from the mock. The person is centred in
+   person.png and the photo is cover-fit, so a viewport-relative anchor keeps
+   the stack beside them at any aspect. The slot holds the resting placement;
+   the card inside it is what GSAP moves. */
+.cargo__slot {
+  position: absolute;
+  top: 45%;
+  left: 12%;
+  width: clamp(232px, 22vw, 400px);
+  aspect-ratio: 4 / 5;
+  transform: translate(var(--slot-x), calc(-50% + var(--slot-y))) rotate(var(--slot-rotate));
+}
+
+.cargo__card {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-rows: auto auto 1fr auto;
+  gap: 18px;
+  padding: clamp(20px, 1.8vw, 32px);
+  background: var(--orange);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  color: #fff;
+  box-shadow: 0 30px 60px rgba(0, 10, 60, 0.3);
+  will-change: transform;
+}
+
+/* Alternating tone. There is no colour of its own here on purpose — it blurs
+   whatever it is sitting on, so it reads orange over the card beneath and dark
+   over the photo where it overhangs, which is what keeps the stack coherent. */
+.cargo__card--glass {
+  background: rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(18px) saturate(150%);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+  border-color: rgba(255, 255, 255, 0.72);
+}
+
+/* Without a real backdrop sample the veil above is far too thin to carry white
+   text, so fall back to a lighter orange — it keeps the alternation visible. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .cargo__card--glass {
+    background: rgba(255, 138, 105, 0.92);
+  }
+}
+
+.cargo__index {
+  margin: 0;
+  font-size: clamp(13px, 0.95vw, 18px);
+}
+
+.cargo__title {
+  margin: 0;
+  font-family: 'Neue Montreal', 'Helvetica Neue', sans-serif;
+  font-size: clamp(24px, 2.3vw, 40px);
+  font-weight: 400;
+  line-height: 1.06;
+  letter-spacing: -0.02em;
+}
+
+.cargo__art {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+}
+
+.cargo__body {
+  margin: 0;
+  font-size: clamp(14px, 1.1vw, 21px);
+  line-height: 1.3;
+}
+
 .stage-layer--third h2 {
   margin: 0;
   color: var(--navy);
@@ -1070,6 +1150,31 @@ button {
     clip-path: none;
   }
 
+  /* No scrub, so the fan makes no sense — the cards just read as content. */
+  .cargo {
+    position: relative;
+    inset: auto;
+    display: grid;
+    gap: 18px;
+    pointer-events: auto;
+  }
+
+  .cargo__slot {
+    position: relative;
+    top: auto;
+    left: auto;
+    width: 100%;
+    transform: none;
+  }
+
+  /* In flow the backdrop is the section's white, so a glass card would be white
+     on white. Nothing to sample down here — go solid. */
+  .cargo__card--glass {
+    background: var(--orange);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
   .story__truck {
     display: block;
   }
@@ -1367,6 +1472,28 @@ button {
     clip-path: none;
   }
 
+  .experience--reduced .cargo {
+    position: relative;
+    inset: auto;
+    display: grid;
+    gap: 18px;
+    pointer-events: auto;
+  }
+
+  .experience--reduced .cargo__slot {
+    position: relative;
+    top: auto;
+    left: auto;
+    width: 100%;
+    transform: none;
+  }
+
+  .experience--reduced .cargo__card--glass {
+    background: var(--orange);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
   .experience--reduced .story__phrase-wrap {
     display: none;
   }
@@ -1375,5 +1502,285 @@ button {
     opacity: 1 !important;
     filter: none !important;
     transform: none !important;
+  }
+}
+
+/* ==========================================================================
+   SERVICES
+   Self-contained block: base rules, then its own breakpoints. Everything is
+   namespaced under .services / .service-row, so this can be lifted into its
+   own stylesheet wholesale if global.css is ever split up.
+   ========================================================================== */
+
+.services {
+  /* The one bezier every motion in this section eases on. */
+  --ease-smooth: cubic-bezier(0.21, 0, 0.19, 1);
+
+  position: relative;
+  z-index: 41;
+  padding: clamp(90px, 11vh, 160px) var(--page-gutter) clamp(80px, 10vh, 140px);
+  background: #fff;
+}
+
+/* Three tracks shared by the intro and every row, so the headline, the tags
+   and the arrows all line up on the same two vertical rules. */
+.services__intro,
+.service-row__link {
+  display: grid;
+  grid-template-columns: minmax(0, 34%) minmax(0, 1fr) 28px;
+  gap: clamp(20px, 3vw, 56px);
+  align-items: start;
+}
+
+.services__intro {
+  padding-bottom: clamp(48px, 6vh, 88px);
+}
+
+/* Masks clip their child's rise; the child is what GSAP moves. */
+.services__eyebrow-mask,
+.services__line-mask,
+.services__cta-mask {
+  display: block;
+  margin: 0;
+  overflow: hidden;
+}
+
+.services__eyebrow-mask > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--black);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.services__mark {
+  width: 12px;
+  height: 12px;
+  flex: none;
+}
+
+.services__heading {
+  grid-column: 2 / -1;
+  display: grid;
+  justify-items: start;
+  gap: clamp(22px, 3vh, 40px);
+}
+
+.services__title {
+  margin: 0;
+  color: var(--navy);
+  font-family: 'Neue Montreal', 'Helvetica Neue', sans-serif;
+  font-size: clamp(30px, 4vw, 66px);
+  font-weight: 400;
+  line-height: 1.08;
+  letter-spacing: -0.025em;
+}
+
+.services__line-mask > span {
+  display: block;
+}
+
+.services__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  padding: 15px 26px;
+  background: var(--navy);
+  color: #fff;
+  font-size: clamp(14px, 1.1vw, 17px);
+  font-weight: 500;
+  text-decoration: none;
+  transition:
+    background 0.3s var(--ease-smooth),
+    gap 0.3s var(--ease-smooth);
+}
+
+.services__cta:hover {
+  background: var(--orange);
+  gap: 20px;
+}
+
+.services__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.service-row {
+  position: relative;
+}
+
+/* Lift the hovered row so its overhanging image clears the neighbouring rules
+   and the row below it. */
+.service-row:hover {
+  z-index: 3;
+}
+
+/* Anchored rather than following the pointer, and sized to fall in the gap
+   between where the longest name ends and where the tags begin — so it never
+   covers either. Portrait, so it stays narrow enough for that gap while still
+   overhanging the row's rules top and bottom. */
+.service-row__media {
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  left: 31%;
+  /* Sized by height, since height is the constraint here — the frame overhangs
+     the row's rules and the ratio makes it tall. Width follows from 9:16. */
+  height: clamp(170px, 16vw, 250px);
+  width: auto;
+  aspect-ratio: 9 / 16;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.72) rotate(-16deg);
+  transition:
+    transform 0.65s var(--ease-smooth),
+    opacity 0.4s var(--ease-smooth);
+}
+
+.service-row__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.service-row__link:hover .service-row__media {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1) rotate(-9deg);
+}
+
+/* A real element rather than a border, so it can be drawn left-to-right. */
+.service-row__rule,
+.services__rule-end {
+  display: block;
+  height: 1px;
+  background: rgba(0, 10, 60, 0.14);
+}
+
+.service-row__rule {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+}
+
+.service-row__link {
+  align-items: center;
+  padding: clamp(22px, 3.2vh, 40px) 0;
+  color: inherit;
+  text-decoration: none;
+}
+
+.service-row__name {
+  color: var(--navy);
+  font-family: 'Neue Montreal', 'Helvetica Neue', sans-serif;
+  font-size: clamp(22px, 2.5vw, 42px);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  transition: color 0.3s var(--ease-smooth);
+}
+
+.service-row__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.service-row__tag {
+  padding: 9px 18px;
+  border: 1px solid rgba(0, 10, 60, 0.18);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: clamp(13px, 1vw, 17px);
+  white-space: nowrap;
+  transition:
+    border-color 0.3s var(--ease-smooth),
+    color 0.3s var(--ease-smooth);
+}
+
+.service-row__arrow {
+  justify-self: end;
+  color: var(--muted);
+  font-size: 20px;
+  line-height: 1;
+  transition:
+    transform 0.3s var(--ease-smooth),
+    color 0.3s var(--ease-smooth);
+}
+
+.service-row__link:hover .service-row__name {
+  color: var(--orange);
+}
+
+.service-row__link:hover .service-row__tag {
+  border-color: rgba(255, 90, 51, 0.5);
+  color: var(--navy);
+}
+
+.service-row__link:hover .service-row__arrow {
+  color: var(--orange);
+  transform: translateX(6px);
+}
+
+.service-row__link:focus-visible {
+  outline: 2px solid var(--orange);
+  outline-offset: 4px;
+}
+
+/* Below the three-track layout the name and arrow share a line, with the tags
+   wrapping underneath — the grid columns would otherwise crush the tags. */
+@media (max-width: 900px) {
+  .services__intro,
+  .service-row__link {
+    grid-template-columns: 1fr auto;
+    gap: 18px;
+  }
+
+  .services__heading {
+    grid-column: 1 / -1;
+  }
+
+  .service-row__tags {
+    grid-column: 1 / -1;
+  }
+
+  .service-row__arrow {
+    align-self: center;
+  }
+}
+
+/* The gap between the longest name and the tags collapses as the row narrows —
+   228px of clear space at 2000px, 35px by 1024px. Past this point the frame
+   cannot sit anywhere without covering one or the other, so it stops. */
+@media (max-width: 1050px) {
+  .service-row__media {
+    display: none;
+  }
+}
+
+/* No hover to reveal it, and it would only sit on top of the row. */
+@media (hover: none), (pointer: coarse) {
+  .service-row__media {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .services__cta,
+  .service-row__name,
+  .service-row__tag,
+  .service-row__arrow,
+  .service-row__media {
+    transition: none;
+  }
+
+  /* A frame that snapped in and out at full size would be worse than none. */
+  .service-row__media {
+    display: none;
   }
 }

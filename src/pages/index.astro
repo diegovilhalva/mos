@@ -1,10 +1,13 @@
 ---
-import Layout from '../layouts/Layout.astro';
-import Experience from '../components/Experience';
+import Layout from "../layouts/Layout.astro";
+import Experience from "../components/Experience";
+import ServicesSection from "../components/ServicesSection";
 ---
 
 <Layout>
   <main>
     <Experience client:load />
+    <!-- Below the fold by several viewports, so it hydrates on approach. -->
+    <ServicesSection client:visible />
   </main>
 </Layout>

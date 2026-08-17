@@ -1,0 +1,160 @@
+---
+/**
+ * Full-screen orange curtain, shown from the very first painted frame and swept
+ * away once the hero is genuinely ready to be looked at.
+ *
+ * Deliberately NOT a React island: an island only exists after hydration, which
+ * is exactly the window this component is here to cover. Static markup plus the
+ * render-blocking `global.css` means the curtain is up on frame one.
+ */
+const COLUMNS = 8;
+---
+
+<div class="preloader" data-preloader aria-hidden="true">
+  <div class="preloader__columns">
+    {Array.from({ length: COLUMNS }).map(() => <span class="preloader__column"></span>)}
+  </div>
+
+  <div class="preloader__brand" data-preloader-brand>
+    <!-- The curtain-specific mark: the chevrons that are orange in the header
+         lockup are white here, so they read against the orange sheet instead of
+         disappearing into it. Intrinsic 89x91 — taller than the header SVG. -->
+    <img src="/assets/logo-white.png" alt="" width="89" height="91" />
+    <span>MOS</span>
+  </div>
+</div>
+
+<script>
+  import gsap from 'gsap';
+  import { CustomEase } from 'gsap/CustomEase';
+
+  /**
+   * Hero art only. The 145-frame scroll sequence (~8MB) is streamed in the
+   * background by Experience and is deliberately NOT waited on here — blocking
+   * on it would park a visitor behind the curtain for ten seconds to prefetch
+   * something they cannot see for another three scroll units.
+   */
+  const HERO_ASSETS = [
+    '/assets/truck.png',
+    '/assets/front-wheel.png',
+    '/assets/rear-wheel-1.png',
+    '/assets/rear-wheel-2.png',
+    '/assets/truck-shadow.svg',
+    '/assets/logo-mark.svg',
+    '/assets/showreel.png',
+    '/assets/person.png',
+    '/assets/invert-color-truck.png',
+  ];
+
+  const MIN_DWELL = 600;
+  const MAX_WAIT = 6000;
+
+  // How much of the screen must be uncovered before the hero is handed the
+  // stage. Waiting for the curtain to finish reads as two separate events — a
+  // wipe, then a truck that was sitting parked. Releasing early overlaps them
+  // into one motion: the truck is already under way behind the last slabs.
+  //
+  // Measured off the columns' live transforms rather than the timeline's own
+  // progress, because those two are nowhere near each other on this curve: with
+  // `0.33, 0, 0.01, 1` a column has travelled ~95% by 64% of its tween, so the
+  // sheet is visually gone around timeline progress 0.6 and the remaining 40%
+  // of the run time is imperceptible tail.
+  const CURTAIN_CLEARED = 0.1;
+
+  const overlay = document.querySelector<HTMLElement>('[data-preloader]');
+  const gate = window.__mosPreloader;
+
+  // Split in two on purpose: the hero starts at CURTAIN_CLEARED, but the overlay
+  // can only be removed once the last column is genuinely off screen.
+  const release = () => {
+    if (!gate || gate.done) return;
+    gate.done = true;
+    gate.resolve();
+  };
+
+  const teardown = () => {
+    document.documentElement.classList.remove('is-preloading');
+    overlay?.remove();
+    release();
+  };
+
+  const wait = (ms: number) => new Promise<void>((resolve) => window.setTimeout(resolve, ms));
+
+  // Same pattern as the frame loader in Experience: decode() off the main
+  // thread, and never reject — a single 404 must not strand the curtain.
+  const decodeImage = (src: string) =>
+    new Promise<void>((resolve) => {
+      const image = new Image();
+      image.src = src;
+      image
+        .decode()
+        .catch(() => {})
+        .finally(() => resolve());
+    });
+
+  const assetsReady = Promise.all([
+    document.fonts?.ready ?? Promise.resolve(),
+    ...HERO_ASSETS.map(decodeImage),
+  ]);
+
+  const ready = Promise.all([
+    // A stalled asset must delay the reveal, never cancel it.
+    Promise.race([assetsReady, wait(MAX_WAIT)]),
+    // ...and a warm cache must not flash the curtain for two frames.
+    wait(MIN_DWELL),
+  ]);
+
+  if (!overlay) {
+    teardown();
+  } else if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    ready.then(teardown);
+  } else {
+    gsap.registerPlugin(CustomEase);
+    const preloadEase = CustomEase.create('preloadEase', '0.33, 0, 0.01, 1');
+
+    ready.then(() => {
+      // Only the columns this breakpoint actually shows. Staggering over the
+      // `display: none` ones too would spend the first slots of `from: 'end'`
+      // animating nothing, delaying the visible sweep by a dead beat.
+      const columns = gsap.utils
+        .toArray<HTMLElement>('.preloader__column')
+        .filter((column) => column.offsetWidth > 0);
+      const brand = overlay.querySelector('[data-preloader-brand]');
+
+      // Far enough to clear the top edge outright. The lockup sits above the
+      // columns, so anything short of leaving the viewport would leave it
+      // hanging over bare white once the sheet has passed it.
+      const brandExit = -(window.innerHeight / 2 + (brand?.getBoundingClientRect().height ?? 0));
+
+      // Each column contributes 1 while parked and 0 once fully off screen, so
+      // this is literally the fraction of the viewport still under orange.
+      const stillCovered = () =>
+        columns.reduce(
+          (sum, column) => sum + 1 + (gsap.getProperty(column, 'yPercent') as number) / 100,
+          0,
+        ) / columns.length;
+
+      const checkHandoff = () => {
+        if (gate?.done) return;
+        if (!columns.length || stillCovered() <= 1 - CURTAIN_CLEARED) release();
+      };
+
+      gsap
+        .timeline({ onUpdate: checkHandoff, onComplete: teardown })
+        // The lockup leads the sheet out rather than being clipped by it.
+        .to(brand, { y: brandExit, duration: 1.15, ease: preloadEase }, 0)
+        .to(
+          columns,
+          {
+            yPercent: -100,
+            duration: 1.15,
+            ease: preloadEase,
+            // `end` = rightmost column leaves first, so the reveal reads as a
+            // staircase descending left-to-right.
+            stagger: { each: 0.075, from: 'end' },
+          },
+          0.1,
+        );
+    });
+  }
+</script>

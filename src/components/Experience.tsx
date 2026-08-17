@@ -111,6 +111,9 @@ export default function Experience() {
     };
 
     let introSafety = 0;
+    // Set on unmount so a preloader gate that resolves after a StrictMode/HMR
+    // teardown can't play a timeline belonging to a reverted context.
+    let introKilled = false;
 
     const context = gsap.context(() => {
       const navbarEase = CustomEase.create('navbarEase', '0.364, 0, 0, 1');
@@ -702,7 +705,13 @@ export default function Experience() {
 
       /* ---------------------------------------------------------------- intro */
 
-      const intro = gsap.timeline();
+      // Paused, because the preloader curtain is still up. Safe by construction:
+      // a `.from()` renders its start state the moment it is created even on a
+      // paused timeline, so the hero sits in its pre-intro pose (truck offscreen,
+      // headline inside its mask) behind the curtain rather than in its resting
+      // pose. That is also why buildScrollScenes() must stay deferred — see the
+      // note on it above.
+      const intro = gsap.timeline({ paused: true });
 
       intro
         .from('[data-animate="header"]', { y: -24, opacity: 0, duration: 0.5001, ease: navbarEase }, 0)
@@ -720,10 +729,21 @@ export default function Experience() {
           releaseScroll();
         });
 
-      introSafety = window.setTimeout(() => {
-        buildScrollScenes();
-        releaseScroll();
-      }, 4200);
+      // Handed off by the preloader once fonts and the hero art are decoded, so
+      // the intro never plays against half-loaded images. Resolves immediately
+      // if the gate is missing (SSR-less dev edge, or a stripped Layout).
+      const preloaderGate = window.__mosPreloader?.promise ?? Promise.resolve();
+
+      preloaderGate.then(() => {
+        if (introKilled) return;
+
+        intro.play();
+
+        introSafety = window.setTimeout(() => {
+          buildScrollScenes();
+          releaseScroll();
+        }, 4200);
+      });
 
       gsap.to('[data-animate="showreel-image"]', {
         rotate: 360,
@@ -760,6 +780,7 @@ export default function Experience() {
     }, experience);
 
     return () => {
+      introKilled = true;
       window.clearTimeout(introSafety);
       gsap.ticker.remove(raf);
       lenis.destroy();

@@ -23,6 +23,80 @@
   box-sizing: border-box;
 }
 
+/* ------------------------------------------------------------------ preloader
+   Lives this high in the file because it has to be painted on the very first
+   frame: `global.css` is a render-blocking <link>, so these rules land before
+   anything else can flash through. */
+
+html.is-preloading,
+html.is-preloading body {
+  overflow: hidden;
+}
+
+.preloader {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: grid;
+  place-items: center;
+  /* Purely decorative and on its way out — never eat a click. */
+  pointer-events: none;
+}
+
+.preloader__columns {
+  position: absolute;
+  inset: 0;
+  display: flex;
+}
+
+.preloader__column {
+  flex: 1;
+  background: var(--orange);
+  will-change: transform;
+  /* Outer shadow first: `flex: 1` lands on fractional widths at most viewport
+     sizes, and without a 1px orange bleed the rounding shows as white hairlines
+     between columns. The inset shadow on top of it is the seam from the design. */
+  box-shadow:
+    1px 0 0 var(--orange),
+    inset -1px 0 0 rgba(0, 0, 0, 0.045);
+}
+
+.preloader__brand {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  will-change: transform;
+}
+
+.preloader__brand img {
+  display: block;
+  width: clamp(47px, 4.4vw, 62px);
+  height: auto;
+}
+
+.preloader__brand span {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(40px, 4.4vw, 58px);
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: #fff;
+}
+
+/* `flex: 1` means dropping the tail columns re-widens the survivors on its
+   own — no per-breakpoint width maths. */
+@media (max-width: 1199px) {
+  .preloader__column:nth-child(n + 7) {
+    display: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .preloader__column:nth-child(n + 5) {
+    display: none;
+  }
+}
+
 html {
   background: #fff;
   /* Scrollbar hidden site-wide; Lenis still drives the scrolling. */

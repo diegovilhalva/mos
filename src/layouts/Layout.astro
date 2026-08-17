@@ -3,7 +3,7 @@ import '@fontsource/bebas-neue/400.css';
 import '@fontsource/inter/400.css';
 import '@fontsource/inter/500.css';
 import '../styles/global.css';
-
+import Preloader from '../components/Preloader.astro';
 
 interface Props {
   title?: string;
@@ -80,6 +80,7 @@ const {
     </noscript>
   </head>
   <body>
+    <Preloader />
     <slot />
   </body>
 </html>

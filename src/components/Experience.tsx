@@ -6,7 +6,7 @@ import Lenis from 'lenis';
 import SiteHeader from './SiteHeader';
 import HeroStage from './HeroStage';
 import StoryPanels from './StoryPanels';
-import ThirdReveal, { HOTSPOTS, FRAME_W, FRAME_H } from './ThirdReveal';
+import ThirdReveal, { HOTSPOTS, FRAME_W, FRAME_H, DOOR } from './ThirdReveal';
 import type { VapourTextCanvasHandle } from './VapourTextCanvas';
 
 /**
@@ -17,6 +17,9 @@ import type { VapourTextCanvasHandle } from './VapourTextCanvas';
  *   state 2 (t = 2)    phrase vapourised, "Problems" resolved snapped
  *   state 3 (t = 4.5)  video fullscreen and played out        FREE SCROLL
  *   state 4 (t = 5.5)  hotspot callouts drawn over last frame FREE SCROLL
+ *   state 5 (t = 6)    blacked out to the cargo door, photo   FREE SCROLL
+ *                      up inside it
+ *   state 6 (t = 8)    door opened out to a fullscreen image  FREE SCROLL
  *
  * Snapping deliberately stops at state 2. Past it everything is ordinary
  * scrolling, so the page starts feeling like a normal page.
@@ -26,11 +29,15 @@ import type { VapourTextCanvasHandle } from './VapourTextCanvas';
  * 1:1 with the wheel), while the video scrubs and opens out across the whole
  * 2 -> 4.5, so it lands fullscreen exactly on its last frame.
  *
+ * D (5.5 -> 8) uses the truck's own cargo opening as a mask: black washes in
+ * around it while the photo comes up inside it — one beat, not two — and then
+ * the opening grows out to fullscreen while the photo underneath holds still.
+ *
  * Every tween inside a SNAPPED transition MUST finish before the next boundary,
  * or a "fixed" state would still be moving when the snap settles.
  */
 
-const TIMELINE_UNITS = 5.5;
+const TIMELINE_UNITS = 8;
 
 /** Video runs the full length of transition C. */
 const VIDEO_SPAN = 2.5;
@@ -324,6 +331,19 @@ export default function Experience() {
               if (drawnFrame >= 0) drawFrame(drawnFrame);
             };
 
+            // The drawn frame's rect inside the canvas box — the same cover fit
+            // drawFrame does, expressed in layout pixels. Anything anchored to
+            // the footage has to go through this, or it slides off the truck at
+            // any aspect other than 16:9.
+            const frameRect = () => {
+              const cw = canvas.clientWidth;
+              const ch = canvas.clientHeight;
+              const scale = Math.max(cw / FRAME_W, ch / FRAME_H);
+              const w = FRAME_W * scale;
+              const h = FRAME_H * scale;
+              return { left: (cw - w) / 2, top: (ch - h) / 2, w, h };
+            };
+
             // Fetched in the background while the visitor is still in the hero,
             // so the ~5MB never competes with first paint. Several chains at
             // once, but in order, so the opening frames land first.
@@ -377,7 +397,13 @@ export default function Experience() {
                 2,
               );
 
-            cleanupCanvas = () => window.removeEventListener('resize', sizeCanvas);
+            // Everything this branch has to undo on a matchMedia revert. GSAP's
+            // context tracks its own tweens but knows nothing about listeners or
+            // styles written by hand in an onUpdate.
+            const undo: Array<() => void> = [
+              () => window.removeEventListener('resize', sizeCanvas),
+            ];
+            cleanupCanvas = () => undo.forEach((fn) => fn());
 
             /* --- hotspots: fire once the last frame lands (t 4.5 -> 5.5) --- */
             const layer = experience.current?.querySelector<HTMLElement>('[data-hotspots]');
@@ -388,18 +414,14 @@ export default function Experience() {
             if (layer && dots.length === HOTSPOTS.length) {
               gsap.set([...dots, ...labels], { xPercent: -50, yPercent: -50 });
 
-              // Reproduce the canvas cover fit in layout terms, so the layer sits
-              // exactly over the drawn frame and the % anchors hit real pixels.
+              // Sit the layer exactly over the drawn frame, so the % anchors
+              // inside it hit real pixels.
               const layoutHotspots = () => {
-                const cw = canvas.clientWidth;
-                const ch = canvas.clientHeight;
-                if (!cw || !ch) return;
+                if (!canvas.clientWidth || !canvas.clientHeight) return;
 
-                const scale = Math.max(cw / FRAME_W, ch / FRAME_H);
-                const w = FRAME_W * scale;
-                const h = FRAME_H * scale;
-                layer.style.left = `${(cw - w) / 2}px`;
-                layer.style.top = `${(ch - h) / 2}px`;
+                const { left, top, w, h } = frameRect();
+                layer.style.left = `${left}px`;
+                layer.style.top = `${top}px`;
                 layer.style.width = `${w}px`;
                 layer.style.height = `${h}px`;
 
@@ -421,10 +443,7 @@ export default function Experience() {
 
               layoutHotspots();
               window.addEventListener('resize', layoutHotspots);
-              cleanupCanvas = () => {
-                window.removeEventListener('resize', sizeCanvas);
-                window.removeEventListener('resize', layoutHotspots);
-              };
+              undo.push(() => window.removeEventListener('resize', layoutHotspots));
 
               const reveal = gsap.timeline();
               HOTSPOTS.forEach((_, index) => {
@@ -454,6 +473,68 @@ export default function Experience() {
               // fits the reveal to the 4.5 -> 5.5 window exactly, so it is fully
               // settled at the end of the timeline whatever the stagger becomes.
               states.add(reveal.totalDuration(1), 4.5);
+            }
+
+            /* --- transition D (t 5.5 -> 8): the cargo door becomes a mask --- */
+            const shade = experience.current?.querySelector<HTMLElement>('[data-third-shade]');
+            const photo = experience.current?.querySelector<HTMLElement>('[data-third-reveal]');
+
+            if (shade && photo) {
+              const mask = { open: 0 };
+
+              const renderMask = () => {
+                const cw = canvas.clientWidth;
+                const ch = canvas.clientHeight;
+                if (!cw || !ch) return;
+
+                // The door rect in canvas pixels at open = 0, eased out to the
+                // whole canvas box at open = 1. Scaling each edge by (1 - open)
+                // is what walks it to inset(0) on every side at once.
+                const rect = frameRect();
+                const rest = 1 - mask.open;
+                const l = (rect.left + (DOOR.x / 100) * rect.w) * rest;
+                const t = (rect.top + (DOOR.y / 100) * rect.h) * rest;
+                const r = (cw - (rect.left + ((DOOR.x + DOOR.w) / 100) * rect.w)) * rest;
+                const b = (ch - (rect.top + ((DOOR.y + DOOR.h) / 100) * rect.h)) * rest;
+
+                photo.style.clipPath = `inset(${t}px ${r}px ${b}px ${l}px)`;
+
+                // Outer box, then a bridge in to trace the hole and back out —
+                // the standard way to punch a hole with a single polygon. Same
+                // four edges as the inset above.
+                const x1 = cw - r;
+                const y1 = ch - b;
+                shade.style.clipPath =
+                  `polygon(0 0, 0 100%, ${l}px 100%, ${l}px ${t}px, ${x1}px ${t}px, ` +
+                  `${x1}px ${y1}px, ${l}px ${y1}px, ${l}px 100%, 100% 100%, 100% 0)`;
+              };
+
+              renderMask();
+              // Only the scrub redraws this, so a resize while parked mid-zoom
+              // would otherwise leave the window at its old size.
+              window.addEventListener('resize', renderMask);
+              undo.push(() => {
+                window.removeEventListener('resize', renderMask);
+                shade.style.clipPath = '';
+                photo.style.clipPath = '';
+              });
+
+              states
+                // One beat, not two: the black washes in around the opening at
+                // the same time as the photo comes up inside it, so it reads as
+                // the screen going dark ON the photo rather than a blackout
+                // followed by a separate reveal. Both linear and the same
+                // length, so they stay locked to each other through a scrub.
+                .to(shade, { opacity: 1, duration: 0.5, ease: 'none' }, 5.5)
+                .to(photo, { opacity: 1, duration: 0.5, ease: 'none' }, 5.5)
+                // The window opens out; the photo underneath never moves.
+                .to(
+                  mask,
+                  { open: 1, duration: 2, ease: 'power2.inOut', onUpdate: renderMask },
+                  6,
+                );
+
+              if (layer) states.to(layer, { opacity: 0, duration: 0.3, ease: 'power2.out' }, 5.5);
             }
           }
 

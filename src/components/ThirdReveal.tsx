@@ -23,6 +23,14 @@ export const FRAME_W = 1440;
 export const FRAME_H = 810;
 
 /**
+ * The cargo opening in the last frame, in the same frame-percentage space as
+ * HOTSPOTS — bounded by the top rail, the two open door panels and the bed
+ * floor. Its centre lands at 50.4% / 51.7%, so the mask that grows out of it
+ * reads as a zoom from the middle of the screen.
+ */
+export const DOOR = { x: 42.71, y: 37.78, w: 15.28, h: 27.9 };
+
+/**
  * The banner and the third section are one mechanism, so they live together.
  *
  * The banner is painted above the third section (z 31 vs 30) and rises from
@@ -79,6 +87,29 @@ export default function ThirdReveal() {
             </Fragment>
           ))}
         </div>
+
+        {/*
+          Black everywhere but the cargo opening. The hole is punched in JS
+          rather than the shade being solid, so the canvas still shows through
+          the opening — the window is the real cargo bay before the image
+          lands in it.
+        */}
+        <div className="stage-third__shade" data-third-shade aria-hidden="true" />
+
+        {/*
+          Locked at cover-fit size and only ever clipped, never scaled. The
+          window grows around it, so the picture itself never moves.
+          Low priority because it is not needed until eight viewports down and
+          would otherwise compete with the frame sequence on first load.
+        */}
+        <img
+          className="stage-third__reveal"
+          data-third-reveal
+          src="/assets/person.png"
+          alt=""
+          fetchPriority="low"
+          decoding="async"
+        />
 
         {/*
           Narrow viewports and reduced motion have no scrub, and ordinary

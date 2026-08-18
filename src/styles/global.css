@@ -475,12 +475,12 @@ button {
     visibility 520ms;
 }
 
-.nav__links > a {
+.nav__links>a {
   position: relative;
   padding: 12px 0;
 }
 
-.nav__links > a::after {
+.nav__links>a::after {
   position: absolute;
   right: 0;
   bottom: 5px;
@@ -493,8 +493,8 @@ button {
   transition: transform 420ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.nav__links > a:hover::after,
-.nav__links > a:focus-visible::after {
+.nav__links>a:hover::after,
+.nav__links>a:focus-visible::after {
   transform: scaleX(1);
   transform-origin: left;
 }
@@ -698,41 +698,33 @@ button {
 
 .truck__image--inverted {
   z-index: 4;
-  -webkit-mask-image: radial-gradient(
-    circle var(--lens-edge) at var(--lens-x) var(--lens-y),
-    #000 0,
-    #000 var(--lens-core),
-    rgba(0, 0, 0, 0.78) calc(var(--lens-core) + 6px),
-    transparent var(--lens-edge)
-  );
-  mask-image: radial-gradient(
-    circle var(--lens-edge) at var(--lens-x) var(--lens-y),
-    #000 0,
-    #000 var(--lens-core),
-    rgba(0, 0, 0, 0.78) calc(var(--lens-core) + 6px),
-    transparent var(--lens-edge)
-  );
+  -webkit-mask-image: radial-gradient(circle var(--lens-edge) at var(--lens-x) var(--lens-y),
+      #000 0,
+      #000 var(--lens-core),
+      rgba(0, 0, 0, 0.78) calc(var(--lens-core) + 6px),
+      transparent var(--lens-edge));
+  mask-image: radial-gradient(circle var(--lens-edge) at var(--lens-x) var(--lens-y),
+      #000 0,
+      #000 var(--lens-core),
+      rgba(0, 0, 0, 0.78) calc(var(--lens-core) + 6px),
+      transparent var(--lens-edge));
 }
 
 .truck__image--pressure {
   z-index: 3;
   filter: blur(10px) saturate(1.08);
-  -webkit-mask-image: radial-gradient(
-    circle var(--pressure-outer) at var(--lens-x) var(--lens-y),
-    transparent 0,
-    transparent var(--pressure-inner),
-    rgba(0, 0, 0, 0.72) calc(var(--pressure-inner) + 12px),
-    rgba(0, 0, 0, 0.32) calc(var(--pressure-outer) - 16px),
-    transparent var(--pressure-outer)
-  );
-  mask-image: radial-gradient(
-    circle var(--pressure-outer) at var(--lens-x) var(--lens-y),
-    transparent 0,
-    transparent var(--pressure-inner),
-    rgba(0, 0, 0, 0.72) calc(var(--pressure-inner) + 12px),
-    rgba(0, 0, 0, 0.32) calc(var(--pressure-outer) - 16px),
-    transparent var(--pressure-outer)
-  );
+  -webkit-mask-image: radial-gradient(circle var(--pressure-outer) at var(--lens-x) var(--lens-y),
+      transparent 0,
+      transparent var(--pressure-inner),
+      rgba(0, 0, 0, 0.72) calc(var(--pressure-inner) + 12px),
+      rgba(0, 0, 0, 0.32) calc(var(--pressure-outer) - 16px),
+      transparent var(--pressure-outer));
+  mask-image: radial-gradient(circle var(--pressure-outer) at var(--lens-x) var(--lens-y),
+      transparent 0,
+      transparent var(--pressure-inner),
+      rgba(0, 0, 0, 0.72) calc(var(--pressure-inner) + 12px),
+      rgba(0, 0, 0, 0.32) calc(var(--pressure-outer) - 16px),
+      transparent var(--pressure-outer));
 }
 
 .truck--lens-active .truck__image--inverted,
@@ -1239,6 +1231,7 @@ button {
 
   /* No scrub, so the fan makes no sense — the cards just read as content. */
   .cargo {
+    width:100%;
     position: relative;
     inset: auto;
     display: grid;
@@ -1449,6 +1442,10 @@ button {
     transform: none;
   }
 
+  .story__truck-image {
+    display: none;
+  }
+
   .story__problem-copy h3 {
     font-size: 20px;
   }
@@ -1461,7 +1458,9 @@ button {
   }
 }
 
-@media (hover: none), (pointer: coarse) {
+@media (hover: none),
+(pointer: coarse) {
+
   .truck__container-hitbox,
   .truck__image--inverted,
   .truck__image--pressure {
@@ -1485,6 +1484,10 @@ button {
 
   .hero__cta {
     top: 792px;
+  }
+
+  .story__truck-image {
+    display: none;
   }
 }
 
@@ -1637,7 +1640,7 @@ button {
   overflow: hidden;
 }
 
-.services__eyebrow-mask > span {
+.services__eyebrow-mask>span {
   display: inline-flex;
   align-items: center;
   gap: 10px;
@@ -1671,7 +1674,7 @@ button {
   letter-spacing: -0.025em;
 }
 
-.services__line-mask > span {
+.services__line-mask>span {
   display: block;
 }
 
@@ -1827,6 +1830,7 @@ button {
 /* Below the three-track layout the name and arrow share a line, with the tags
    wrapping underneath — the grid columns would otherwise crush the tags. */
 @media (max-width: 900px) {
+
   .services__intro,
   .service-row__link {
     grid-template-columns: 1fr auto;
@@ -1856,13 +1860,15 @@ button {
 }
 
 /* No hover to reveal it, and it would only sit on top of the row. */
-@media (hover: none), (pointer: coarse) {
+@media (hover: none),
+(pointer: coarse) {
   .service-row__media {
     display: none;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   .services__cta,
   .service-row__name,
   .service-row__tag,
@@ -1912,7 +1918,7 @@ button {
   overflow: hidden;
 }
 
-.testimonials__eyebrow-mask > span {
+.testimonials__eyebrow-mask>span {
   display: inline-flex;
   align-items: center;
   gap: 10px;
@@ -1939,7 +1945,7 @@ button {
   letter-spacing: -0.025em;
 }
 
-.testimonials__line-mask > span {
+.testimonials__line-mask>span {
   display: block;
 }
 
@@ -1990,6 +1996,7 @@ button {
   from {
     transform: translateX(-50%);
   }
+
   to {
     transform: translateX(0);
   }
@@ -2074,7 +2081,7 @@ button {
   font-size: 14px;
   line-height: 1.5;
   display: -webkit-box;
-  -webkit-line-clamp: 3;
+  line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }

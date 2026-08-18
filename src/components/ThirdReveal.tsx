@@ -105,7 +105,7 @@ export default function ThirdReveal() {
       </section>
 
       <section className="stage-layer stage-layer--third" data-third aria-label="Third section">
-        <h2>Third section</h2>
+        <h2>Features</h2>
 
         {/*
           Scroll-scrubbed playback is a decoded frame sequence drawn to canvas,
